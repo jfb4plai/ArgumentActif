@@ -211,6 +211,7 @@ test('buildClassifyRequest mode cle: body contient le system prompt contraignant
   assert.ok(b.max_tokens <= 800);
   assert.equal(b.temperature, undefined, 'pas de temperature (400 sur sonnet-5)');
   assert.equal(b.top_p, undefined);
+  assert.equal(b.top_k, undefined);
   assert.deepEqual(b.thinking, { type: 'disabled' });
   assert.equal(b.output_config.effort, 'low');
   assert.equal(b.output_config.format.type, 'json_schema');

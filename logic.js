@@ -277,8 +277,10 @@ function buildClassifyRequest({ mode, apiKey, proxyUrl, texte, sujet }) {
   if (mode === 'manuel') throw new Error('Mode manuel : aucun appel réseau.');
 
   if (mode === 'proxy') {
+    const p = String(proxyUrl || '').trim();
+    if (!p) throw new Error("URL du proxy manquante.");
     return {
-      url: String(proxyUrl).trim(),
+      url: p,
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ texte: t, sujet: String(sujet || '') }),
     };
