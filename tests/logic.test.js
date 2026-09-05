@@ -172,3 +172,18 @@ test('formatExport n\'affiche jamais de verdict vrai/faux', () => {
   const txt = L.formatExport(s);
   assert.doesNotMatch(txt, /\b(vrai|faux|correct|incorrect|erroné)\b/i);
 });
+
+test('detectMode: proxy si URL de proxy fournie', () => {
+  assert.equal(L.detectMode({ proxyUrl: 'https://x.vercel.app/api/classify', apiKey: '' }), 'proxy');
+  assert.equal(L.detectMode({ proxyUrl: 'https://x/api/classify', apiKey: 'sk-ant-xxx' }), 'proxy');
+});
+
+test('detectMode: cle si clé fournie et pas de proxy', () => {
+  assert.equal(L.detectMode({ proxyUrl: '', apiKey: 'sk-ant-abc' }), 'cle');
+  assert.equal(L.detectMode({ proxyUrl: '   ', apiKey: '  sk-ant-abc ' }), 'cle');
+});
+
+test('detectMode: manuel si rien', () => {
+  assert.equal(L.detectMode({ proxyUrl: '', apiKey: '' }), 'manuel');
+  assert.equal(L.detectMode({}), 'manuel');
+});

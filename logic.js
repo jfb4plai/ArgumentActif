@@ -219,10 +219,16 @@ function formatExport(state) {
   return lignes.join('\n');
 }
 
+function detectMode({ proxyUrl, apiKey } = {}) {
+  if (proxyUrl && String(proxyUrl).trim()) return 'proxy';
+  if (apiKey && String(apiKey).trim()) return 'cle';
+  return 'manuel';
+}
+
 const api = {
   TAXONOMY, SOCRATIC_BANK, CATEGORIES, CAMPS,
   createUnite, clearSeance, addUnite, reclassifyUnite, setCamp, toggleFlag,
-  parseModelResponse, formatExport,
+  parseModelResponse, formatExport, detectMode,
 };
 
 // Double export : Node (tests) + navigateur (app.js via <script>).
