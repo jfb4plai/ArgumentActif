@@ -187,3 +187,46 @@ test('detectMode: manuel si rien', () => {
   assert.equal(L.detectMode({ proxyUrl: '', apiKey: '' }), 'manuel');
   assert.equal(L.detectMode({}), 'manuel');
 });
+
+test('buildClassifyRequest mode cle: endpoint Anthropic, headers clé + version + browser flag', () => {
+  const r = L.buildClassifyRequest({ mode: 'cle', apiKey: 'sk-ant-K', texte: 'Tout le monde sait que X.', sujet: 'S' });
+  assert.equal(r.url, 'https://api.anthropic.com/v1/messages');
+  assert.equal(r.headers['x-api-key'], 'sk-ant-K');
+  assert.equal(r.headers['anthropic-version'], '2023-06-01');
+  assert.equal(r.headers['anthropic-dangerous-direct-browser-access'], 'true');
+  assert.equal(r.headers['content-type'], 'application/json');
+});
+
+test('buildClassifyRequest mode proxy: endpoint proxy, aucun secret dans les headers', () => {
+  const r = L.buildClassifyRequest({ mode: 'proxy', proxyUrl: 'https://p.vercel.app/api/classify', texte: 't', sujet: 'S' });
+  assert.equal(r.url, 'https://p.vercel.app/api/classify');
+  assert.equal(r.headers['x-api-key'], undefined);
+  assert.deepEqual(JSON.parse(r.body), { texte: 't', sujet: 'S' });
+});
+
+test('buildClassifyRequest mode cle: body contient le system prompt contraignant et le schéma', () => {
+  const r = L.buildClassifyRequest({ mode: 'cle', apiKey: 'k', texte: 'phrase', sujet: "Le sport à l'école" });
+  const b = JSON.parse(r.body);
+  assert.equal(b.model, 'claude-sonnet-5');
+  assert.ok(b.max_tokens <= 800);
+  assert.equal(b.temperature, undefined, 'pas de temperature (400 sur sonnet-5)');
+  assert.equal(b.top_p, undefined);
+  assert.deepEqual(b.thinking, { type: 'disabled' });
+  assert.equal(b.output_config.effort, 'low');
+  assert.equal(b.output_config.format.type, 'json_schema');
+  assert.ok(b.output_config.format.schema && b.output_config.format.schema.type === 'object');
+  assert.match(b.system, /jamais.*réplique|jamais.*contre-argument/i);
+  assert.match(b.system, /jamais.*(vrai|faux)/i);
+  assert.match(b.system, /dominante/i);
+  for (const k of L.CATEGORIES) assert.ok(b.system.includes(k), `system mentionne ${k}`);
+  assert.match(b.messages[0].content, /phrase/);
+  assert.match(b.messages[0].content, /Le sport à l'école/);
+});
+
+test('buildClassifyRequest mode manuel: jette une erreur (aucun appel réseau attendu)', () => {
+  assert.throws(() => L.buildClassifyRequest({ mode: 'manuel', texte: 't' }), /manuel/i);
+});
+
+test('buildClassifyRequest exige un texte non vide', () => {
+  assert.throws(() => L.buildClassifyRequest({ mode: 'cle', apiKey: 'k', texte: '   ' }), /texte/i);
+});

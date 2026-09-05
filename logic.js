@@ -225,10 +225,95 @@ function detectMode({ proxyUrl, apiKey } = {}) {
   return 'manuel';
 }
 
+// ── Construction de la requête de classification ─────────────────────
+// ID confirmé via skill claude-api le 2026-09-05. Jamais de suffixe date.
+const MODEL_ID = 'claude-sonnet-5';
+
+function systemPrompt() {
+  const lignes = Object.entries(TAXONOMY).map(
+    ([k, v]) => `- ${k} : ${v.libelle}. ${v.definition}`
+  );
+  return [
+    "Tu es un outil de repérage du type de mouvement argumentatif employé pendant un débat scolaire.",
+    "",
+    "Ta seule tâche : (1) découper le passage en unités d'affirmation (une proposition ≈ une unité) ;",
+    "(2) attribuer à chaque unité UNE catégorie de la liste ci-dessous.",
+    "",
+    "Catégories autorisées (utilise la clé exacte, à gauche du deux-points) :",
+    ...lignes,
+    "",
+    "Règles strictes :",
+    "- Ne commente jamais le fond. Ne dis jamais qu'une affirmation est vraie ou fausse.",
+    "- Ne produis jamais de réplique, de contre-argument, de reformulation « corrigée » ni de conseil.",
+    "- Une unité qui se présente comme un fait -> catégorie affirmation-factuelle, sans te prononcer sur sa véracité.",
+    "- Si une unité relève de plusieurs catégories, choisis la catégorie DOMINANTE et une seule.",
+    "- N'ajoute aucun texte hors du JSON demandé.",
+  ].join('\n');
+}
+
+const RESPONSE_SCHEMA = {
+  type: 'object',
+  properties: {
+    unites: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          texte: { type: 'string' },
+          categorie: { type: 'string', enum: Object.keys(TAXONOMY) },
+        },
+        required: ['texte', 'categorie'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['unites'],
+  additionalProperties: false,
+};
+
+function buildClassifyRequest({ mode, apiKey, proxyUrl, texte, sujet }) {
+  const t = String(texte || '').trim();
+  if (!t) throw new Error('Le texte à classer est vide.');
+  if (mode === 'manuel') throw new Error('Mode manuel : aucun appel réseau.');
+
+  if (mode === 'proxy') {
+    return {
+      url: String(proxyUrl).trim(),
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ texte: t, sujet: String(sujet || '') }),
+    };
+  }
+
+  // mode === 'cle'
+  const userContent =
+    `Sujet du débat : ${sujet || '(non précisé)'}\n\n` +
+    `Passage à découper et classer :\n"""${t}"""`;
+  return {
+    url: 'https://api.anthropic.com/v1/messages',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: MODEL_ID,
+      max_tokens: 700,
+      thinking: { type: 'disabled' },
+      output_config: {
+        effort: 'low',
+        format: { type: 'json_schema', schema: RESPONSE_SCHEMA },
+      },
+      system: systemPrompt(),
+      messages: [{ role: 'user', content: userContent }],
+    }),
+  };
+}
+
 const api = {
   TAXONOMY, SOCRATIC_BANK, CATEGORIES, CAMPS,
   createUnite, clearSeance, addUnite, reclassifyUnite, setCamp, toggleFlag,
-  parseModelResponse, formatExport, detectMode,
+  parseModelResponse, formatExport, detectMode, buildClassifyRequest,
 };
 
 // Double export : Node (tests) + navigateur (app.js via <script>).
