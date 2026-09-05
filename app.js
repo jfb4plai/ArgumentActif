@@ -23,7 +23,72 @@
     const payload = { type: 'state', state };
     if (channel) channel.postMessage(payload);
     try { localStorage.setItem('argumentactif.ping', String(Date.now())); localStorage.removeItem('argumentactif.ping'); } catch {}
+    pushToProjection();
   }
+
+  // ── Vue Projection (fenêtre séparée, alimentée par postMessage) ──
+  const PROJECTION_HTML = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>ArgumentActif — Projection</title>
+<style>
+  :root{color-scheme:dark}
+  body{margin:0;background:#1e293b;color:#f8fafc;font-family:'Inter',system-ui,sans-serif;
+       min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:2vh 4vw;box-sizing:border-box}
+  #bandeau{font-size:1.4vw;line-height:1.4;text-align:center;opacity:.85;max-width:70ch;margin-bottom:3vh;border-bottom:1px solid #475569;padding-bottom:1.5vh}
+  #courante{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:2vh}
+  #courante .pastille{display:inline-flex;align-items:center;gap:1vw;font-size:2.6vw;font-weight:700;padding:.4em .8em;border-radius:.5em;background:#0f172a}
+  #courante .dot{width:1.1em;height:1.1em;border-radius:50%}
+  #courante .texte{font-size:2.2vw;max-width:40ch}
+  #courante .camp{font-size:1.3vw;opacity:.75}
+  #courante .verif{font-size:1.4vw;color:#fbbf24}
+  #historique{display:flex;flex-direction:column;gap:1vh;opacity:.4;font-size:1.2vw;margin-top:2vh;max-width:50ch;text-align:center}
+  #legende{margin-top:auto;display:flex;flex-wrap:wrap;gap:.6vw 1.4vw;justify-content:center;font-size:1vw;opacity:.7;padding-top:2vh}
+  #legende span{display:inline-flex;align-items:center;gap:.4em}
+  #legende i{width:.9em;height:.9em;border-radius:2px;display:inline-block}
+  #vide{opacity:.5;font-size:1.6vw}
+</style></head><body>
+<div id="bandeau">Cet outil repère un type de mouvement de discours. Il ne juge ni la personne qui parle, ni la vérité de ce qui est dit.</div>
+<div id="courante"><div id="vide">En attente du premier propos…</div></div>
+<div id="historique"></div>
+<div id="legende"></div>
+<script>
+  const TAX = ${JSON.stringify(L.TAXONOMY)};
+  const leg = document.getElementById('legende');
+  for (const k in TAX){ const s=document.createElement('span'); s.innerHTML='<i style="background:'+TAX[k].couleur+'"></i>'+TAX[k].libelle; leg.appendChild(s); }
+  function render(state){
+    const c = document.getElementById('courante'); const h = document.getElementById('historique');
+    const us = (state && state.unites) || [];
+    if (!us.length){ c.innerHTML='<div id="vide">En attente du premier propos…</div>'; h.innerHTML=''; return; }
+    const last = us[us.length-1];
+    const t = last.categorie==='non-classe' ? {libelle:'Non classé',couleur:'#94a3b8'} : TAX[last.categorie];
+    c.innerHTML =
+      '<div class="pastille"><span class="dot" style="background:'+t.couleur+'"></span>'+t.libelle+'</div>'+
+      '<div class="texte">« '+esc(last.texte)+' »</div>'+
+      (last.camp ? '<div class="camp">position : '+last.camp+'</div>' : '')+
+      (last.aVerifier ? '<div class="verif">⚑ à vérifier par la classe</div>' : '');
+    h.innerHTML = us.slice(-4,-1).reverse().map(function(u){
+      var tt = u.categorie==='non-classe'?'Non classé':TAX[u.categorie].libelle;
+      return '<div>'+tt+' — « '+esc(u.texte)+' »</div>';
+    }).join('');
+  }
+  function esc(s){ return String(s).replace(/[&<>]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[m];}); }
+  const ch = ('BroadcastChannel' in window) ? new BroadcastChannel('argumentactif') : null;
+  if (ch) ch.onmessage = function(e){ if (e.data && e.data.type==='state') render(e.data.state); };
+  window.addEventListener('message', function(e){ if (e.data && e.data.type==='state') render(e.data.state); });
+  try { render(JSON.parse(sessionStorage.getItem('argumentactif.seance'))); } catch(_) {}
+  if (window.opener) window.opener.postMessage({type:'projection-ready'}, '*');
+</script></body></html>`;
+
+  let projectionWin = null;
+  function ouvrirProjection() {
+    const blob = new Blob([PROJECTION_HTML], { type: 'text/html' });
+    projectionWin = window.open(URL.createObjectURL(blob), 'argumentactif-projection', 'width=1280,height=720');
+  }
+  function pushToProjection() {
+    if (projectionWin && !projectionWin.closed) projectionWin.postMessage({ type: 'state', state }, '*');
+  }
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'projection-ready') pushToProjection();
+  });
 
   const $ = (s) => document.querySelector(s);
   const journalEl = () => $('#journal');
@@ -175,7 +240,40 @@
     exportFait = true;
   }
 
-  function renderDebriefing() { /* implémenté au Task 11 */ }
+  function escapeHtml(s) { return String(s).replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
+
+  function renderDebriefing() {
+    const fCat = $('#f-categorie');
+    if (fCat && fCat.options.length <= 1) {
+      for (const [k, v] of Object.entries(L.TAXONOMY)) {
+        const o = document.createElement('option'); o.value = k; o.textContent = v.libelle; fCat.appendChild(o);
+      }
+    }
+    const catF = fCat ? fCat.value : '';
+    const campF = $('#f-camp') ? $('#f-camp').value : '';
+    const masque = $('#masquer-etiquettes').checked;
+    $('.debrief').classList.toggle('masque', masque);
+
+    const corps = $('#debrief-corps');
+    corps.innerHTML = '';
+    const filtrees = state.unites.filter((u) =>
+      (!catF || u.categorie === catF) && (!campF || u.camp === campF));
+    for (const u of filtrees) {
+      const tr = document.createElement('tr');
+      const cat = u.categorie === 'non-classe' ? null : L.TAXONOMY[u.categorie];
+      const pistes = (L.SOCRATIC_BANK[u.categorie] || []).map((p) => '• ' + p).join('<br>');
+      tr.innerHTML =
+        `<td>${(u.timestamp || '').slice(11, 16)}</td>` +
+        `<td>« ${escapeHtml(u.texte)} »</td>` +
+        `<td class="etiquette-cell" style="border-left:6px solid ${cat ? cat.couleur : '#999'}">${cat ? cat.libelle : 'Non classé'}${u.aVerifier ? ' ⚑' : ''}</td>` +
+        `<td>${u.camp || '—'}</td>` +
+        `<td>${pistes}</td>`;
+      corps.appendChild(tr);
+    }
+    const aVerif = state.unites.filter((u) => u.aVerifier).length;
+    $('#debrief-compteur').textContent =
+      `${filtrees.length} unité(s) affichée(s) · ${aVerif} à vérifier par les élèves · ${state.unites.length} au total.`;
+  }
 
   function init() {
     buildGrille();
@@ -198,7 +296,10 @@
     document.querySelectorAll('input[name="camp"]').forEach((rd) => rd.addEventListener('change', () => {
       campCourant = rd.value || null;
     }));
-    $('#ouvrir-projection').addEventListener('click', () => window.open('projection.html', 'argumentactif-projection', 'width=1280,height=720'));
+    $('#ouvrir-projection').addEventListener('click', ouvrirProjection);
+    ['#f-categorie', '#f-camp', '#masquer-etiquettes'].forEach((s) => {
+      const el = $(s); if (el) el.addEventListener('change', renderDebriefing);
+    });
 
     window.addEventListener('beforeunload', (e) => {
       if (state.unites.length > 0 && !exportFait) { e.preventDefault(); e.returnValue = ''; }
