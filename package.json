@@ -1,0 +1,12 @@
+{
+  "name": "argumentactif",
+  "version": "0.1.0",
+  "description": "Étiquetage en direct du type de mouvement argumentatif pendant un débat de classe (PLAI / FWB).",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test tests/",
+    "build": "node build.js"
+  },
+  "license": "MIT",
+  "private": true
+}
