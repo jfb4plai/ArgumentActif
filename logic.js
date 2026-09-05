@@ -1,0 +1,111 @@
+'use strict';
+
+// ── Taxonomie descriptive (non évaluative) ────────────────────────────
+// Définitions FR calées sur Plantin, Dictionnaire de l'argumentation 2025.
+// Couleurs : palette catégorielle neutre, aucune connotation bon/mauvais.
+// Contraste AA vérifié sur fond clair (#faf9f7) et fond projection (#1e293b).
+const TAXONOMY = {
+  'affirmation-factuelle': {
+    libelle: 'Affirmation factuelle vérifiable',
+    definition: "Énoncé qui se présente comme un fait et pourrait être confirmé ou infirmé par une source.",
+    couleur: '#3b6ea5',
+  },
+  'opinion': {
+    libelle: 'Opinion / jugement de valeur',
+    definition: "Prise de position personnelle, appréciation, préférence — ne prétend pas au statut de fait.",
+    couleur: '#8a6fbf',
+  },
+  'generalisation-abusive': {
+    libelle: 'Généralisation abusive',
+    definition: "Conclusion large tirée d'un ou quelques cas particuliers.",
+    couleur: '#c77d3a',
+  },
+  'appel-emotion': {
+    libelle: "Appel à l'émotion",
+    definition: "Argument qui s'appuie sur la peur, la pitié, l'indignation plutôt que sur des raisons.",
+    couleur: '#c9536b',
+  },
+  'homme-de-paille': {
+    libelle: 'Homme de paille',
+    definition: "Déformation de la position adverse pour la réfuter plus facilement.",
+    couleur: '#6f8f4f',
+  },
+  'ad-hominem': {
+    libelle: 'Ad hominem',
+    definition: "Attaque de la personne qui parle plutôt que de ce qu'elle dit.",
+    couleur: '#9c8a3e',
+  },
+  'fausse-dichotomie': {
+    libelle: 'Fausse dichotomie',
+    definition: "Présentation de deux options comme seules possibles alors qu'il en existe d'autres.",
+    couleur: '#4f9d9d',
+  },
+  'pente-glissante': {
+    libelle: 'Pente glissante',
+    definition: "Affirme qu'un premier pas entraîne mécaniquement une suite d'effets extrêmes, sans étayer le lien.",
+    couleur: '#7d8aa5',
+  },
+  'autorite-non-sourcee': {
+    libelle: "Argument d'autorité non sourcé",
+    definition: "Invoque une autorité (expert, étude, chiffre) sans permettre de la vérifier.",
+    couleur: '#5b8c5a',
+  },
+  'question-rhetorique': {
+    libelle: 'Question rhétorique / esquive',
+    definition: "Question qui n'attend pas de réponse, ou détour qui évite de répondre au point soulevé.",
+    couleur: '#b07aa1',
+  },
+};
+
+// ── Banque de pistes socratiques (statique, jamais un appel modèle) ───
+// Uniquement des questions ouvertes qui poussent l'élève à réagir lui-même.
+const SOCRATIC_BANK = {
+  'affirmation-factuelle': [
+    "Quelle source permettrait de trancher ?",
+    "Comment pourrait-on vérifier ce chiffre ?",
+  ],
+  'opinion': [
+    "Sur quelles raisons cette opinion s'appuie-t-elle ?",
+    "Qu'est-ce qui distingue ici une opinion d'un fait ?",
+  ],
+  'generalisation-abusive': [
+    "Ce cas vaut-il pour tous les cas ?",
+    "Quels contre-exemples pourrait-on trouver ?",
+  ],
+  'appel-emotion': [
+    "En retirant l'émotion, quelle raison reste-t-il ?",
+    "Quelle donnée soutiendrait la même conclusion ?",
+  ],
+  'homme-de-paille': [
+    "Est-ce vraiment ce que l'autre a dit ?",
+    "Comment l'autre reformulerait-il sa propre position ?",
+  ],
+  'ad-hominem': [
+    "En quoi la personne change-t-elle la valeur de l'argument ?",
+    "Que devient le raisonnement si on retire l'attaque ?",
+  ],
+  'fausse-dichotomie': [
+    "Existe-t-il une troisième option ?",
+    "Ces deux choix sont-ils vraiment incompatibles ?",
+  ],
+  'pente-glissante': [
+    "Quel est le lien entre le premier pas et le dernier ?",
+    "À quelle étape la chaîne pourrait-elle s'arrêter ?",
+  ],
+  'autorite-non-sourcee': [
+    "Qui affirme cela, et où peut-on le vérifier ?",
+    "Cette autorité est-elle compétente sur ce point précis ?",
+  ],
+  'question-rhetorique': [
+    "Quelle réponse cette question suppose-t-elle ?",
+    "Le point soulevé juste avant a-t-il reçu une réponse ?",
+  ],
+};
+
+const CATEGORIES = Object.keys(TAXONOMY);
+
+const api = { TAXONOMY, SOCRATIC_BANK, CATEGORIES };
+
+// Double export : Node (tests) + navigateur (app.js via <script>).
+if (typeof module !== 'undefined' && module.exports) module.exports = api;
+if (typeof window !== 'undefined') window.ArgumentActifLogic = api;

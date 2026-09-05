@@ -4,7 +4,7 @@
   "description": "Étiquetage en direct du type de mouvement argumentatif pendant un débat de classe (PLAI / FWB).",
   "type": "commonjs",
   "scripts": {
-    "test": "node --test tests/",
+    "test": "node --test",
     "build": "node build.js"
   },
   "license": "MIT",
