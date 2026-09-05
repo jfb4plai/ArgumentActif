@@ -1,0 +1,344 @@
+<!doctype html>
+<!-- Fichier généré par build.js — ne pas éditer. Source : index.template.html + logic.js + app.js -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ArgumentActif</title>
+  <link rel="stylesheet" href="plai-style.css" />
+  <style>/* CSS spécifique ajouté au Task 10 */</style>
+</head>
+<body>
+  <main id="app"><!-- markup ajouté au Task 10 --></main>
+  <script>
+'use strict';
+
+// ── Taxonomie descriptive (non évaluative) ────────────────────────────
+// Définitions FR calées sur Plantin, Dictionnaire de l'argumentation 2025.
+// Couleurs : palette catégorielle neutre, aucune connotation bon/mauvais.
+// Contraste AA vérifié sur fond clair (#faf9f7) et fond projection (#1e293b).
+const TAXONOMY = {
+  'affirmation-factuelle': {
+    libelle: 'Affirmation factuelle vérifiable',
+    definition: "Énoncé qui se présente comme un fait et pourrait être confirmé ou infirmé par une source.",
+    couleur: '#3b6ea5',
+  },
+  'opinion': {
+    libelle: 'Opinion / jugement de valeur',
+    definition: "Prise de position personnelle, appréciation, préférence — ne prétend pas au statut de fait.",
+    couleur: '#8a6fbf',
+  },
+  'generalisation-abusive': {
+    libelle: 'Généralisation abusive',
+    definition: "Conclusion large tirée d'un ou quelques cas particuliers.",
+    couleur: '#c77d3a',
+  },
+  'appel-emotion': {
+    libelle: "Appel à l'émotion",
+    definition: "Argument qui s'appuie sur la peur, la pitié, l'indignation plutôt que sur des raisons.",
+    couleur: '#c9536b',
+  },
+  'homme-de-paille': {
+    libelle: 'Homme de paille',
+    definition: "Déformation de la position adverse pour la réfuter plus facilement.",
+    couleur: '#6f8f4f',
+  },
+  'ad-hominem': {
+    libelle: 'Ad hominem',
+    definition: "Attaque de la personne qui parle plutôt que de ce qu'elle dit.",
+    couleur: '#9c8a3e',
+  },
+  'fausse-dichotomie': {
+    libelle: 'Fausse dichotomie',
+    definition: "Présentation de deux options comme seules possibles alors qu'il en existe d'autres.",
+    couleur: '#4f9d9d',
+  },
+  'pente-glissante': {
+    libelle: 'Pente glissante',
+    definition: "Affirme qu'un premier pas entraîne mécaniquement une suite d'effets extrêmes, sans étayer le lien.",
+    couleur: '#7d8aa5',
+  },
+  'autorite-non-sourcee': {
+    libelle: "Argument d'autorité non sourcé",
+    definition: "Invoque une autorité (expert, étude, chiffre) sans permettre de la vérifier.",
+    couleur: '#5b8c5a',
+  },
+  'question-rhetorique': {
+    libelle: 'Question rhétorique / esquive',
+    definition: "Question qui n'attend pas de réponse, ou détour qui évite de répondre au point soulevé.",
+    couleur: '#b07aa1',
+  },
+};
+
+// ── Banque de pistes socratiques (statique, jamais un appel modèle) ───
+// Uniquement des questions ouvertes qui poussent l'élève à réagir lui-même.
+const SOCRATIC_BANK = {
+  'affirmation-factuelle': [
+    "Quelle source permettrait de trancher ?",
+    "Comment pourrait-on vérifier ce chiffre ?",
+  ],
+  'opinion': [
+    "Sur quelles raisons cette opinion s'appuie-t-elle ?",
+    "Qu'est-ce qui distingue ici une opinion d'un fait ?",
+  ],
+  'generalisation-abusive': [
+    "Ce cas vaut-il pour tous les cas ?",
+    "Quels contre-exemples pourrait-on trouver ?",
+  ],
+  'appel-emotion': [
+    "En retirant l'émotion, quelle raison reste-t-il ?",
+    "Quelle donnée soutiendrait la même conclusion ?",
+  ],
+  'homme-de-paille': [
+    "Est-ce vraiment ce que l'autre a dit ?",
+    "Comment l'autre reformulerait-il sa propre position ?",
+  ],
+  'ad-hominem': [
+    "En quoi la personne change-t-elle la valeur de l'argument ?",
+    "Que devient le raisonnement si on retire l'attaque ?",
+  ],
+  'fausse-dichotomie': [
+    "Existe-t-il une troisième option ?",
+    "Ces deux choix sont-ils vraiment incompatibles ?",
+  ],
+  'pente-glissante': [
+    "Quel est le lien entre le premier pas et le dernier ?",
+    "À quelle étape la chaîne pourrait-elle s'arrêter ?",
+  ],
+  'autorite-non-sourcee': [
+    "Qui affirme cela, et où peut-on le vérifier ?",
+    "Cette autorité est-elle compétente sur ce point précis ?",
+  ],
+  'question-rhetorique': [
+    "Quelle réponse cette question suppose-t-elle ?",
+    "Le point soulevé juste avant a-t-il reçu une réponse ?",
+  ],
+};
+
+const CATEGORIES = Object.keys(TAXONOMY);
+
+// ── ID ───────────────────────────────────────────────────────────────
+function uid() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return 'u-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+
+// ── Unité ────────────────────────────────────────────────────────────
+const CAMPS = ['pour', 'contre', 'autre'];
+
+function assertCategorie(cat) {
+  if (cat !== 'non-classe' && !TAXONOMY[cat]) {
+    throw new Error(`Catégorie inconnue : ${cat}`);
+  }
+}
+
+function createUnite({ texteSource, texte, categorie, origine }) {
+  assertCategorie(categorie);
+  if (origine !== 'ia' && origine !== 'manuel') throw new Error(`origine invalide : ${origine}`);
+  return {
+    id: uid(),
+    timestamp: new Date().toISOString(),
+    texteSource: String(texteSource || ''),
+    texte: String(texte || ''),
+    categorie,
+    camp: null,
+    aVerifier: false,
+    origine,
+    editee: false,
+  };
+}
+
+// ── État de séance (immutable) ───────────────────────────────────────
+function clearSeance({ sujet }) {
+  return { sujet: String(sujet || ''), unites: [], creeLe: new Date().toISOString() };
+}
+
+function addUnite(state, unite) {
+  return { ...state, unites: [...state.unites, unite] };
+}
+
+function mapUnite(state, id, fn) {
+  return { ...state, unites: state.unites.map((u) => (u.id === id ? fn(u) : u)) };
+}
+
+function reclassifyUnite(state, id, categorie) {
+  assertCategorie(categorie);
+  return mapUnite(state, id, (u) => ({ ...u, categorie, editee: true }));
+}
+
+function setCamp(state, id, camp) {
+  if (camp !== null && !CAMPS.includes(camp)) throw new Error(`camp invalide : ${camp}`);
+  return mapUnite(state, id, (u) => ({ ...u, camp }));
+}
+
+function toggleFlag(state, id) {
+  return mapUnite(state, id, (u) => ({ ...u, aVerifier: !u.aVerifier }));
+}
+
+function parseModelResponse(raw) {
+  let obj = raw;
+  if (typeof raw === 'string') {
+    let s = raw.trim();
+    const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fence) s = fence[1].trim();
+    try { obj = JSON.parse(s); }
+    catch { throw new Error('Réponse du modèle illisible (JSON invalide).'); }
+  }
+  if (!obj || !Array.isArray(obj.unites)) {
+    throw new Error("Réponse du modèle inattendue : champ 'unites' absent.");
+  }
+  return obj.unites
+    .map((u) => ({
+      texte: String((u && u.texte) || '').trim(),
+      categorie: (u && TAXONOMY[u.categorie]) ? u.categorie : 'non-classe',
+    }))
+    .filter((u) => u.texte.length > 0);
+}
+
+function formatExport(state) {
+  const dateSeance = (state.creeLe || '').slice(0, 10) || new Date().toISOString().slice(0, 10);
+  const lignes = [];
+  lignes.push(`ArgumentActif — Débriefing du débat`);
+  lignes.push(`Date   : ${dateSeance}`);
+  lignes.push(`Sujet  : ${state.sujet || '(non précisé)'}`);
+  lignes.push('');
+  lignes.push('Rappel : cet outil repère un type de mouvement de discours.');
+  lignes.push('Il ne juge ni la personne qui parle, ni la vérité de ce qui est dit.');
+  lignes.push('');
+  lignes.push('—'.repeat(60));
+
+  if (state.unites.length === 0) {
+    lignes.push('Aucune unité enregistrée.');
+  } else {
+    for (const u of state.unites) {
+      const heure = (u.timestamp || '').slice(11, 16);
+      const cat = u.categorie === 'non-classe'
+        ? 'NON CLASSÉ'
+        : TAXONOMY[u.categorie].libelle.toUpperCase();
+      const flag = u.aVerifier ? ' — À VÉRIFIER' : '';
+      const camp = u.camp ? ` | camp: ${u.camp}` : '';
+      const edit = u.editee ? ' | (catégorie ajustée)' : '';
+      lignes.push(`[${heure}] ${cat}${flag}${camp}${edit}`);
+      lignes.push(`   "${u.texte}"`);
+      const pistes = SOCRATIC_BANK[u.categorie] || [];
+      if (pistes.length) lignes.push(`   Piste pour réagir : ${pistes[0]}`);
+      lignes.push('');
+    }
+  }
+  lignes.push('—'.repeat(60));
+  const aVerif = state.unites.filter((u) => u.aVerifier).length;
+  lignes.push(`Unités à vérifier par les élèves : ${aVerif}`);
+  lignes.push(`Total d'unités : ${state.unites.length}`);
+  return lignes.join('\n');
+}
+
+function detectMode({ proxyUrl, apiKey } = {}) {
+  if (proxyUrl && String(proxyUrl).trim()) return 'proxy';
+  if (apiKey && String(apiKey).trim()) return 'cle';
+  return 'manuel';
+}
+
+// ── Construction de la requête de classification ─────────────────────
+// ID confirmé via skill claude-api le 2026-09-05. Jamais de suffixe date.
+const MODEL_ID = 'claude-sonnet-5';
+
+function systemPrompt() {
+  const lignes = Object.entries(TAXONOMY).map(
+    ([k, v]) => `- ${k} : ${v.libelle}. ${v.definition}`
+  );
+  return [
+    "Tu es un outil de repérage du type de mouvement argumentatif employé pendant un débat scolaire.",
+    "",
+    "Ta seule tâche : (1) découper le passage en unités d'affirmation (une proposition ≈ une unité) ;",
+    "(2) attribuer à chaque unité UNE catégorie de la liste ci-dessous.",
+    "",
+    "Catégories autorisées (utilise la clé exacte, à gauche du deux-points) :",
+    ...lignes,
+    "",
+    "Règles strictes :",
+    "- Ne commente jamais le fond. Ne dis jamais qu'une affirmation est vraie ou fausse.",
+    "- Ne produis jamais de réplique, de contre-argument, de reformulation « corrigée » ni de conseil.",
+    "- Une unité qui se présente comme un fait -> catégorie affirmation-factuelle, sans te prononcer sur sa véracité.",
+    "- Si une unité relève de plusieurs catégories, choisis la catégorie DOMINANTE et une seule.",
+    "- N'ajoute aucun texte hors du JSON demandé.",
+  ].join('\n');
+}
+
+const RESPONSE_SCHEMA = {
+  type: 'object',
+  properties: {
+    unites: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          texte: { type: 'string' },
+          categorie: { type: 'string', enum: Object.keys(TAXONOMY) },
+        },
+        required: ['texte', 'categorie'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['unites'],
+  additionalProperties: false,
+};
+
+function buildClassifyRequest({ mode, apiKey, proxyUrl, texte, sujet }) {
+  const t = String(texte || '').trim();
+  if (!t) throw new Error('Le texte à classer est vide.');
+  if (mode === 'manuel') throw new Error('Mode manuel : aucun appel réseau.');
+
+  if (mode === 'proxy') {
+    const p = String(proxyUrl || '').trim();
+    if (!p) throw new Error("URL du proxy manquante.");
+    return {
+      url: p,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ texte: t, sujet: String(sujet || '') }),
+    };
+  }
+
+  // mode === 'cle'
+  const userContent =
+    `Sujet du débat : ${sujet || '(non précisé)'}\n\n` +
+    `Passage à découper et classer :\n"""${t}"""`;
+  return {
+    url: 'https://api.anthropic.com/v1/messages',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: MODEL_ID,
+      max_tokens: 700,
+      thinking: { type: 'disabled' },
+      output_config: {
+        effort: 'low',
+        format: { type: 'json_schema', schema: RESPONSE_SCHEMA },
+      },
+      system: systemPrompt(),
+      messages: [{ role: 'user', content: userContent }],
+    }),
+  };
+}
+
+const api = {
+  TAXONOMY, SOCRATIC_BANK, CATEGORIES, CAMPS,
+  createUnite, clearSeance, addUnite, reclassifyUnite, setCamp, toggleFlag,
+  parseModelResponse, formatExport, detectMode, buildClassifyRequest,
+};
+
+// Double export : Node (tests) + navigateur (app.js via <script>).
+if (typeof module !== 'undefined' && module.exports) module.exports = api;
+if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
+
+</script>
+  <script>
+/* stub */
+
+</script>
+</body>
+</html>
