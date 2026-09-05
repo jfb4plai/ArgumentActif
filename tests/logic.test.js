@@ -108,3 +108,40 @@ test('clearSeance vide les unités et garde/père le sujet', () => {
   assert.equal(s2.unites.length, 0);
   assert.equal(s2.sujet, 'ancien');
 });
+
+test('parseModelResponse extrait les unités d\'un objet déjà propre', () => {
+  const raw = { unites: [
+    { texte: "le budget a baissé de 12 %", categorie: 'affirmation-factuelle' },
+    { texte: "c'est scandaleux", categorie: 'opinion' },
+  ]};
+  const out = L.parseModelResponse(raw);
+  assert.equal(out.length, 2);
+  assert.equal(out[0].categorie, 'affirmation-factuelle');
+});
+
+test('parseModelResponse accepte une string JSON', () => {
+  const out = L.parseModelResponse('{"unites":[{"texte":"a","categorie":"opinion"}]}');
+  assert.equal(out.length, 1);
+});
+
+test('parseModelResponse tolère un enrobage Markdown ```json', () => {
+  const s = "```json\n{\"unites\":[{\"texte\":\"a\",\"categorie\":\"opinion\"}]}\n```";
+  const out = L.parseModelResponse(s);
+  assert.equal(out[0].texte, 'a');
+});
+
+test('parseModelResponse remplace une catégorie inconnue par non-classe', () => {
+  const out = L.parseModelResponse({ unites: [{ texte: 'a', categorie: 'sophisme-XYZ' }] });
+  assert.equal(out[0].categorie, 'non-classe');
+});
+
+test('parseModelResponse ignore les unités sans texte', () => {
+  const out = L.parseModelResponse({ unites: [{ texte: '', categorie: 'opinion' }, { texte: 'ok', categorie: 'opinion' }] });
+  assert.equal(out.length, 1);
+  assert.equal(out[0].texte, 'ok');
+});
+
+test('parseModelResponse jette une erreur claire si structure irrécupérable', () => {
+  assert.throws(() => L.parseModelResponse('pas du json du tout'), /réponse du modèle/i);
+  assert.throws(() => L.parseModelResponse({ foo: 1 }), /réponse du modèle/i);
+});

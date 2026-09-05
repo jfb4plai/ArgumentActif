@@ -162,9 +162,30 @@ function toggleFlag(state, id) {
   return mapUnite(state, id, (u) => ({ ...u, aVerifier: !u.aVerifier }));
 }
 
+function parseModelResponse(raw) {
+  let obj = raw;
+  if (typeof raw === 'string') {
+    let s = raw.trim();
+    const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fence) s = fence[1].trim();
+    try { obj = JSON.parse(s); }
+    catch { throw new Error('Réponse du modèle illisible (JSON invalide).'); }
+  }
+  if (!obj || !Array.isArray(obj.unites)) {
+    throw new Error("Réponse du modèle inattendue : champ 'unites' absent.");
+  }
+  return obj.unites
+    .map((u) => ({
+      texte: String((u && u.texte) || '').trim(),
+      categorie: (u && TAXONOMY[u.categorie]) ? u.categorie : 'non-classe',
+    }))
+    .filter((u) => u.texte.length > 0);
+}
+
 const api = {
   TAXONOMY, SOCRATIC_BANK, CATEGORIES, CAMPS,
   createUnite, clearSeance, addUnite, reclassifyUnite, setCamp, toggleFlag,
+  parseModelResponse,
 };
 
 // Double export : Node (tests) + navigateur (app.js via <script>).
