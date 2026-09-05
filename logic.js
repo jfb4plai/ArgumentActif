@@ -182,10 +182,47 @@ function parseModelResponse(raw) {
     .filter((u) => u.texte.length > 0);
 }
 
+function formatExport(state) {
+  const dateSeance = (state.creeLe || '').slice(0, 10) || new Date().toISOString().slice(0, 10);
+  const lignes = [];
+  lignes.push(`ArgumentActif — Débriefing du débat`);
+  lignes.push(`Date   : ${dateSeance}`);
+  lignes.push(`Sujet  : ${state.sujet || '(non précisé)'}`);
+  lignes.push('');
+  lignes.push('Rappel : cet outil repère un type de mouvement de discours.');
+  lignes.push('Il ne juge ni la personne qui parle, ni la vérité de ce qui est dit.');
+  lignes.push('');
+  lignes.push('—'.repeat(60));
+
+  if (state.unites.length === 0) {
+    lignes.push('Aucune unité enregistrée.');
+  } else {
+    for (const u of state.unites) {
+      const heure = (u.timestamp || '').slice(11, 16);
+      const cat = u.categorie === 'non-classe'
+        ? 'NON CLASSÉ'
+        : TAXONOMY[u.categorie].libelle.toUpperCase();
+      const flag = u.aVerifier ? ' — À VÉRIFIER' : '';
+      const camp = u.camp ? ` | camp: ${u.camp}` : '';
+      const edit = u.editee ? ' | (catégorie ajustée)' : '';
+      lignes.push(`[${heure}] ${cat}${flag}${camp}${edit}`);
+      lignes.push(`   "${u.texte}"`);
+      const pistes = SOCRATIC_BANK[u.categorie] || [];
+      if (pistes.length) lignes.push(`   Piste pour réagir : ${pistes[0]}`);
+      lignes.push('');
+    }
+  }
+  lignes.push('—'.repeat(60));
+  const aVerif = state.unites.filter((u) => u.aVerifier).length;
+  lignes.push(`Unités à vérifier par les élèves : ${aVerif}`);
+  lignes.push(`Total d'unités : ${state.unites.length}`);
+  return lignes.join('\n');
+}
+
 const api = {
   TAXONOMY, SOCRATIC_BANK, CATEGORIES, CAMPS,
   createUnite, clearSeance, addUnite, reclassifyUnite, setCamp, toggleFlag,
-  parseModelResponse,
+  parseModelResponse, formatExport,
 };
 
 // Double export : Node (tests) + navigateur (app.js via <script>).

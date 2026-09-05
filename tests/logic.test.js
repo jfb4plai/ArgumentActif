@@ -145,3 +145,30 @@ test('parseModelResponse jette une erreur claire si structure irrécupérable', 
   assert.throws(() => L.parseModelResponse('pas du json du tout'), /réponse du modèle/i);
   assert.throws(() => L.parseModelResponse({ foo: 1 }), /réponse du modèle/i);
 });
+
+test('formatExport produit un .txt lisible avec en-tête, unités et compteur', () => {
+  let s = L.clearSeance({ sujet: 'Faut-il noter les élèves ?' });
+  s.creeLe = '2026-09-05T09:00:00.000Z';
+  const u1 = { ...L.createUnite({ texteSource: 'a', texte: 'si on note, ils vont stresser puis décrocher', categorie: 'pente-glissante', origine: 'ia' }), timestamp: '2026-09-05T09:01:00.000Z', camp: 'contre' };
+  const u2 = { ...L.createUnite({ texteSource: 'b', texte: 'la moyenne a chuté de 3 points', categorie: 'affirmation-factuelle', origine: 'ia' }), timestamp: '2026-09-05T09:02:00.000Z', camp: 'pour', aVerifier: true };
+  s = L.addUnite(L.addUnite(s, u1), u2);
+  const txt = L.formatExport(s);
+  assert.match(txt, /ArgumentActif/);
+  assert.match(txt, /Faut-il noter les élèves \?/);
+  assert.match(txt, /PENTE GLISSANTE \| camp: contre/);
+  assert.match(txt, /AFFIRMATION FACTUELLE VÉRIFIABLE — À VÉRIFIER \| camp: pour/);
+  assert.match(txt, /"la moyenne a chuté de 3 points"/);
+  assert.match(txt, /Unités à vérifier par les élèves\s*:\s*1/);
+});
+
+test('formatExport gère une séance vide sans planter', () => {
+  const txt = L.formatExport(L.clearSeance({ sujet: '' }));
+  assert.match(txt, /Aucune unité/);
+});
+
+test('formatExport n\'affiche jamais de verdict vrai/faux', () => {
+  let s = L.clearSeance({ sujet: 's' });
+  s = L.addUnite(s, L.createUnite({ texteSource: 'a', texte: 'x', categorie: 'affirmation-factuelle', origine: 'ia' }));
+  const txt = L.formatExport(s);
+  assert.doesNotMatch(txt, /\b(vrai|faux|correct|incorrect|erroné)\b/i);
+});
