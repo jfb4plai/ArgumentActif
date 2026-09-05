@@ -104,7 +104,68 @@ const SOCRATIC_BANK = {
 
 const CATEGORIES = Object.keys(TAXONOMY);
 
-const api = { TAXONOMY, SOCRATIC_BANK, CATEGORIES };
+// ── ID ───────────────────────────────────────────────────────────────
+function uid() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return 'u-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+
+// ── Unité ────────────────────────────────────────────────────────────
+const CAMPS = ['pour', 'contre', 'autre'];
+
+function assertCategorie(cat) {
+  if (cat !== 'non-classe' && !TAXONOMY[cat]) {
+    throw new Error(`Catégorie inconnue : ${cat}`);
+  }
+}
+
+function createUnite({ texteSource, texte, categorie, origine }) {
+  assertCategorie(categorie);
+  if (origine !== 'ia' && origine !== 'manuel') throw new Error(`origine invalide : ${origine}`);
+  return {
+    id: uid(),
+    timestamp: new Date().toISOString(),
+    texteSource: String(texteSource || ''),
+    texte: String(texte || ''),
+    categorie,
+    camp: null,
+    aVerifier: false,
+    origine,
+    editee: false,
+  };
+}
+
+// ── État de séance (immutable) ───────────────────────────────────────
+function clearSeance({ sujet }) {
+  return { sujet: String(sujet || ''), unites: [], creeLe: new Date().toISOString() };
+}
+
+function addUnite(state, unite) {
+  return { ...state, unites: [...state.unites, unite] };
+}
+
+function mapUnite(state, id, fn) {
+  return { ...state, unites: state.unites.map((u) => (u.id === id ? fn(u) : u)) };
+}
+
+function reclassifyUnite(state, id, categorie) {
+  assertCategorie(categorie);
+  return mapUnite(state, id, (u) => ({ ...u, categorie, editee: true }));
+}
+
+function setCamp(state, id, camp) {
+  if (camp !== null && !CAMPS.includes(camp)) throw new Error(`camp invalide : ${camp}`);
+  return mapUnite(state, id, (u) => ({ ...u, camp }));
+}
+
+function toggleFlag(state, id) {
+  return mapUnite(state, id, (u) => ({ ...u, aVerifier: !u.aVerifier }));
+}
+
+const api = {
+  TAXONOMY, SOCRATIC_BANK, CATEGORIES, CAMPS,
+  createUnite, clearSeance, addUnite, reclassifyUnite, setCamp, toggleFlag,
+};
 
 // Double export : Node (tests) + navigateur (app.js via <script>).
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
