@@ -172,6 +172,7 @@
   }
 
   function addUnitesFromTexts(items, origine) {
+    stopEcoute();
     const source = $('#propos').value;
     for (const it of items) {
       let u = L.createUnite({ texteSource: source, texte: it.texte, categorie: it.categorie, origine });
@@ -182,6 +183,7 @@
   }
 
   async function classer() {
+    stopEcoute();
     const err = $('#regie-erreur');
     err.hidden = true;
     const texte = $('#propos').value.trim();
@@ -275,6 +277,48 @@
       `${filtrees.length} unité(s) affichée(s) · ${aVerif} à vérifier par les élèves · ${state.unites.length} au total.`;
   }
 
+  // ── Reconnaissance vocale (optionnelle) ─────────────────────────
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null, ecoute = false;
+
+  function initSpeech() {
+    const btn = $('#micro'); const stat = $('#micro-status');
+    if (!SR) {
+      btn.hidden = true;
+      stat.textContent = "Reconnaissance vocale non disponible sur ce navigateur — utilise la saisie clavier (Chrome/Edge la supportent).";
+      return;
+    }
+    stat.textContent = "Dictée disponible. En classe bruyante, la saisie clavier reste plus fiable.";
+    recognition = new SR();
+    recognition.lang = 'fr-FR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    let baseText = '';
+    recognition.onresult = (e) => {
+      let interim = '', fin = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) fin += r[0].transcript;
+        else interim += r[0].transcript;
+      }
+      if (fin) baseText = (baseText + ' ' + fin).trim();
+      $('#propos').value = (baseText + ' ' + interim).trim();
+    };
+    recognition.onerror = (e) => { stat.textContent = 'Erreur micro : ' + e.error + '. Passe au clavier.'; stopEcoute(); };
+    recognition.onend = () => { if (ecoute) recognition.start(); };
+
+    btn.addEventListener('click', () => {
+      if (ecoute) { stopEcoute(); }
+      else { baseText = $('#propos').value.trim(); ecoute = true; btn.textContent = '⏹ Arrêter'; recognition.start(); }
+    });
+  }
+  function stopEcoute() {
+    ecoute = false;
+    const btn = $('#micro'); if (btn) btn.textContent = '🎤 Dicter';
+    if (recognition) { try { recognition.stop(); } catch {} }
+  }
+
   function init() {
     buildGrille();
     renderJournal();
@@ -304,6 +348,8 @@
     window.addEventListener('beforeunload', (e) => {
       if (state.unites.length > 0 && !exportFait) { e.preventDefault(); e.returnValue = ''; }
     });
+
+    initSpeech();
   }
 
   window.ArgumentActifApp = { init, showVue };
