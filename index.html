@@ -5,11 +5,126 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ArgumentActif</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="plai-style.css" />
-  <style>/* CSS spécifique ajouté au Task 10 */</style>
+  <style>
+    :root { --teal:#0a9370; --orange:#f97316; }
+    body { font-family:'Inter',system-ui,sans-serif; }
+    .aide { font-size:.85rem; color:var(--text3,#666); margin:.15rem 0 .6rem; }
+    fieldset { border:1px solid var(--border,#ddd); border-radius:8px; margin:.5rem 0; }
+    .grille-categories { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:.4rem; }
+    .grille-categories button { text-align:left; padding:.5rem; border-radius:8px; border:2px solid; background:#fff; cursor:pointer; font-size:.9rem; }
+    .journal { list-style:none; padding:0; display:flex; flex-direction:column; gap:.5rem; }
+    .journal li { border-left:6px solid; padding:.5rem .75rem; background:#fff; border-radius:0 8px 8px 0; }
+    .journal .meta { display:flex; gap:.5rem; align-items:center; font-size:.85rem; flex-wrap:wrap; }
+    .journal select { font-size:.85rem; }
+    .journal .flag[aria-pressed="true"] { background:var(--orange); color:#fff; }
+    .pied-actions,.saisie-actions,.saisie-tools { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin:.5rem 0; }
+    .plai-btn.danger { background:#b3261e; color:#fff; }
+    .debrief { width:100%; border-collapse:collapse; }
+    .debrief th,.debrief td { border:1px solid var(--border,#ddd); padding:.4rem .6rem; text-align:left; vertical-align:top; }
+    .debrief.masque .etiquette-cell { filter:blur(5px); }
+  </style>
 </head>
 <body>
-  <main id="app"><!-- markup ajouté au Task 10 --></main>
+<header class="plai-nav">
+  <img src="public/plai-logo.jpg" alt="PLAI" style="height:32px;width:auto" />
+  <strong>ArgumentActif</strong>
+  <nav>
+    <button data-vue="regie" class="plai-btn" aria-pressed="true">Régie</button>
+    <button data-vue="debriefing" class="plai-btn">Débriefing</button>
+    <button id="ouvrir-projection" class="plai-btn">Ouvrir la projection ↗</button>
+  </nav>
+</header>
+
+<main id="app">
+  <section id="vue-regie" class="plai-section">
+    <details id="config" open>
+      <summary>Avant le débat — réglages</summary>
+      <div class="plai-card">
+        <label for="sujet">Sujet du débat</label>
+        <input id="sujet" class="plai-input" type="text"
+               placeholder="Ex. : Faut-il interdire les téléphones portables au collège ?" />
+        <p class="aide">Ce sujet s'affiche sur la projection vue par la classe. Il cadre aussi la classification (le modèle sait de quoi on parle).</p>
+
+        <fieldset>
+          <legend>Accès au modèle</legend>
+          <label><input type="radio" name="mode" value="proxy" /> Proxy (clé cachée côté serveur)</label>
+          <input id="proxyUrl" class="plai-input" type="url" placeholder="https://argumentactif.jfb4plai.com/api/classify" />
+          <p class="aide">Si tu as déployé le proxy : colle son URL. Aucune clé ne transite par le navigateur.</p>
+
+          <label><input type="radio" name="mode" value="cle" /> Clé personnelle</label>
+          <input id="apiKey" class="plai-input" type="password" placeholder="sk-ant-…" autocomplete="off" />
+          <p class="aide">La clé reste en mémoire de la session (onglet en cours). Elle n'est jamais enregistrée ni envoyée ailleurs qu'à l'API Anthropic.</p>
+
+          <label><input type="radio" name="mode" value="manuel" checked /> Manuel / hors ligne</label>
+          <p class="aide">Aucune connexion au modèle. Tu segmentes toi-même (une ligne = une unité) et tu choisis la catégorie d'un clic.</p>
+        </fieldset>
+        <button id="demarrer" class="plai-btn">Démarrer le débat</button>
+      </div>
+    </details>
+
+    <div id="pendant" hidden>
+      <div class="plai-card">
+        <div class="saisie-tools">
+          <button id="micro" class="plai-btn" type="button">🎤 Dicter</button>
+          <span id="micro-status" class="aide"></span>
+          <span class="camp-choix">
+            Camp :
+            <label><input type="radio" name="camp" value="pour" /> Pour</label>
+            <label><input type="radio" name="camp" value="contre" /> Contre</label>
+            <label><input type="radio" name="camp" value="autre" /> Autre</label>
+            <label><input type="radio" name="camp" value="" checked /> —</label>
+          </span>
+        </div>
+        <label for="propos">Propos entendu (corrige avant de classer)</label>
+        <textarea id="propos" class="plai-input" rows="3"
+                  placeholder="Tape ou dicte ce qui vient d'être dit. Ex. : « De toute façon, si on autorise ça, bientôt tout sera permis. »"></textarea>
+        <p class="aide">Rien n'est envoyé au modèle tant que tu ne cliques pas « Classer ». Le camp est la position dans le débat, jamais un jugement sur l'élève.</p>
+        <div class="saisie-actions">
+          <button id="classer" class="plai-btn">Classer</button>
+          <button id="ajouter-manuel" class="plai-btn">Ajouter manuellement…</button>
+        </div>
+        <div id="choix-manuel" hidden>
+          <p>Choisis la catégorie :</p>
+          <div id="grille-categories" class="grille-categories"></div>
+        </div>
+        <p id="regie-erreur" class="plai-error" hidden></p>
+      </div>
+
+      <h2>Journal de séance</h2>
+      <ol id="journal" class="journal"></ol>
+
+      <div class="pied-actions">
+        <button id="exporter" class="plai-btn">Exporter le débriefing (.txt)</button>
+        <button id="effacer" class="plai-btn danger">Effacer la séance</button>
+        <span id="mode-actif" class="aide"></span>
+      </div>
+    </div>
+  </section>
+
+  <section id="vue-debriefing" class="plai-section" hidden>
+    <h1>Débriefing</h1>
+    <div class="filtres">
+      <label>Catégorie <select id="f-categorie"><option value="">toutes</option></select></label>
+      <label>Camp <select id="f-camp"><option value="">tous</option><option value="pour">Pour</option><option value="contre">Contre</option><option value="autre">Autre</option></select></label>
+      <label><input type="checkbox" id="masquer-etiquettes" /> Masquer les étiquettes (les élèves proposent)</label>
+    </div>
+    <table class="debrief">
+      <thead><tr><th>Heure</th><th>Unité</th><th>Étiquette</th><th>Camp</th><th>Pistes pour réagir</th></tr></thead>
+      <tbody id="debrief-corps"></tbody>
+    </table>
+    <p id="debrief-compteur" class="aide"></p>
+    <button id="exporter-2" class="plai-btn">Exporter le débriefing (.txt)</button>
+  </section>
+</main>
+
+<footer class="plai-footer">
+  <img src="public/plai-logo.jpg" alt="" style="height:40px;width:auto" />
+  <span>PLAI — Pôle Territorial de la Ville de Liège · outil d'entraînement à l'argumentation</span>
+</footer>
   <script>
 'use strict';
 
@@ -337,7 +452,217 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
 
 </script>
   <script>
-/* stub */
+'use strict';
+(function () {
+  const L = window.ArgumentActifLogic;
+  const STORAGE_KEY = 'argumentactif.seance';
+  const channel = ('BroadcastChannel' in window) ? new BroadcastChannel('argumentactif') : null;
+
+  let state = loadState() || L.clearSeance({ sujet: '' });
+  let config = { mode: 'manuel', proxyUrl: '', apiKey: '' };
+  let campCourant = null;
+  let exportFait = false;
+
+  function loadState() {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
+  function saveState() {
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+    broadcast();
+  }
+  function broadcast() {
+    const payload = { type: 'state', state };
+    if (channel) channel.postMessage(payload);
+    try { localStorage.setItem('argumentactif.ping', String(Date.now())); localStorage.removeItem('argumentactif.ping'); } catch {}
+  }
+
+  const $ = (s) => document.querySelector(s);
+  const journalEl = () => $('#journal');
+
+  function renderJournal() {
+    const el = journalEl();
+    el.innerHTML = '';
+    for (const u of state.unites) el.appendChild(renderUnite(u));
+  }
+
+  function renderUnite(u) {
+    const cat = u.categorie === 'non-classe' ? null : L.TAXONOMY[u.categorie];
+    const li = document.createElement('li');
+    li.style.borderColor = cat ? cat.couleur : '#999';
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+
+    const selCat = document.createElement('select');
+    for (const [k, v] of Object.entries(L.TAXONOMY)) {
+      const o = document.createElement('option');
+      o.value = k; o.textContent = v.libelle; selCat.appendChild(o);
+    }
+    const oNon = document.createElement('option');
+    oNon.value = 'non-classe'; oNon.textContent = 'Non classé';
+    selCat.appendChild(oNon);
+    selCat.value = u.categorie;
+    selCat.addEventListener('change', () => {
+      state = L.reclassifyUnite(state, u.id, selCat.value);
+      saveState(); renderJournal();
+    });
+
+    const selCamp = document.createElement('select');
+    for (const [val, lab] of [['', '—'], ['pour', 'Pour'], ['contre', 'Contre'], ['autre', 'Autre']]) {
+      const o = document.createElement('option'); o.value = val; o.textContent = lab; selCamp.appendChild(o);
+    }
+    selCamp.value = u.camp || '';
+    selCamp.addEventListener('change', () => {
+      state = L.setCamp(state, u.id, selCamp.value || null);
+      saveState(); renderJournal();
+    });
+
+    const flag = document.createElement('button');
+    flag.className = 'flag plai-btn';
+    flag.textContent = u.aVerifier ? '⚑ marqué' : '⚑ à vérifier';
+    flag.setAttribute('aria-pressed', String(u.aVerifier));
+    flag.addEventListener('click', () => {
+      state = L.toggleFlag(state, u.id); saveState(); renderJournal();
+    });
+
+    const heure = document.createElement('span');
+    heure.textContent = (u.timestamp || '').slice(11, 16);
+
+    meta.append(heure, selCat, selCamp, flag);
+    if (u.editee) { const e = document.createElement('span'); e.textContent = '✎'; meta.appendChild(e); }
+
+    const texte = document.createElement('div');
+    texte.textContent = '« ' + u.texte + ' »';
+
+    li.append(meta, texte);
+    return li;
+  }
+
+  function buildGrille() {
+    const g = $('#grille-categories');
+    g.innerHTML = '';
+    for (const [k, v] of Object.entries(L.TAXONOMY)) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.style.borderColor = v.couleur;
+      b.innerHTML = '<strong>' + v.libelle + '</strong><br><small>' + v.definition + '</small>';
+      b.addEventListener('click', () => {
+        const texte = $('#propos').value.trim();
+        if (!texte) return;
+        addUnitesFromTexts([{ texte, categorie: k }], 'manuel');
+        $('#propos').value = '';
+        $('#choix-manuel').hidden = true;
+      });
+      g.appendChild(b);
+    }
+  }
+
+  function addUnitesFromTexts(items, origine) {
+    const source = $('#propos').value;
+    for (const it of items) {
+      let u = L.createUnite({ texteSource: source, texte: it.texte, categorie: it.categorie, origine });
+      if (campCourant) u = { ...u, camp: campCourant };
+      state = L.addUnite(state, u);
+    }
+    saveState(); renderJournal();
+  }
+
+  async function classer() {
+    const err = $('#regie-erreur');
+    err.hidden = true;
+    const texte = $('#propos').value.trim();
+    if (!texte) return;
+    if (config.mode === 'manuel') { $('#choix-manuel').hidden = false; return; }
+    $('#classer').disabled = true;
+    try {
+      const req = L.buildClassifyRequest({ ...config, texte, sujet: state.sujet });
+      const r = await fetch(req.url, { method: 'POST', headers: req.headers, body: req.body });
+      const data = await r.json();
+      if (!r.ok) throw new Error('Le modèle a renvoyé une erreur.');
+      const payload = config.mode === 'cle'
+        ? ((data.content && data.content[0] && data.content[0].text) || data)
+        : data;
+      const unites = L.parseModelResponse(payload);
+      addUnitesFromTexts(unites, 'ia');
+      $('#propos').value = '';
+    } catch (e) {
+      err.textContent = 'Classification automatique indisponible (' + (e.message || e) +
+        '). Passe en mode manuel : clique « Ajouter manuellement… ».';
+      err.hidden = false;
+      $('#choix-manuel').hidden = false;
+    } finally {
+      $('#classer').disabled = false;
+    }
+  }
+
+  function showVue(nom) {
+    $('#vue-regie').hidden = nom !== 'regie';
+    $('#vue-debriefing').hidden = nom !== 'debriefing';
+    document.querySelectorAll('[data-vue]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.vue === nom)));
+    if (nom === 'debriefing') renderDebriefing();
+  }
+
+  function demarrer() {
+    const sujet = $('#sujet').value.trim();
+    state = { ...state, sujet };
+    const modeInput = document.querySelector('input[name="mode"]:checked');
+    config.mode = modeInput ? modeInput.value : 'manuel';
+    config.proxyUrl = $('#proxyUrl').value.trim();
+    config.apiKey = $('#apiKey').value.trim();
+    if (config.mode !== 'manuel' && L.detectMode(config) === 'manuel') config.mode = 'manuel';
+    $('#config').open = false;
+    $('#pendant').hidden = false;
+    $('#mode-actif').textContent = 'Mode actif : ' + config.mode;
+    saveState();
+  }
+
+  function exporter() {
+    const blob = new Blob([L.formatExport(state)], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'argumentactif-debriefing.txt';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    exportFait = true;
+  }
+
+  function renderDebriefing() { /* implémenté au Task 11 */ }
+
+  function init() {
+    buildGrille();
+    renderJournal();
+    if (state.sujet) $('#sujet').value = state.sujet;
+    if (state.unites.length) { $('#config').open = false; $('#pendant').hidden = false; }
+
+    $('#demarrer').addEventListener('click', demarrer);
+    $('#classer').addEventListener('click', classer);
+    $('#ajouter-manuel').addEventListener('click', () => { $('#choix-manuel').hidden = !$('#choix-manuel').hidden; });
+    $('#exporter').addEventListener('click', exporter);
+    if ($('#exporter-2')) $('#exporter-2').addEventListener('click', exporter);
+    $('#effacer').addEventListener('click', () => {
+      if (!confirm('Effacer toute la séance ? Cette action est irréversible.')) return;
+      state = L.clearSeance({ sujet: state.sujet });
+      try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
+      renderJournal(); broadcast();
+    });
+    document.querySelectorAll('[data-vue]').forEach((b) => b.addEventListener('click', () => showVue(b.dataset.vue)));
+    document.querySelectorAll('input[name="camp"]').forEach((rd) => rd.addEventListener('change', () => {
+      campCourant = rd.value || null;
+    }));
+    $('#ouvrir-projection').addEventListener('click', () => window.open('projection.html', 'argumentactif-projection', 'width=1280,height=720'));
+
+    window.addEventListener('beforeunload', (e) => {
+      if (state.unites.length > 0 && !exportFait) { e.preventDefault(); e.returnValue = ''; }
+    });
+  }
+
+  window.ArgumentActifApp = { init, showVue };
+  if (document.readyState !== 'loading') init();
+  else document.addEventListener('DOMContentLoaded', init);
+})();
 
 </script>
 </body>
