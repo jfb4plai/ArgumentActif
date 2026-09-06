@@ -669,6 +669,19 @@
     });
 
     $('#demarrer').addEventListener('click', demarrer);
+    const allerA = $('#aller-scenario-a');
+    if (allerA) allerA.addEventListener('click', () => {
+      const opt = $('#options-avancees');
+      if (opt) opt.open = true;
+      const champ = $('#texte-depart');
+      if (champ) {
+        champ.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        champ.focus({ preventScroll: true });
+        champ.classList.remove('champ-vise');
+        void champ.offsetWidth; // relance l'animation
+        champ.classList.add('champ-vise');
+      }
+    });
     $('#classer').addEventListener('click', classer);
     // Entrée dans « Propos entendu » = Classer (Maj+Entrée pour un saut de ligne)
     $('#propos').addEventListener('keydown', (e) => {

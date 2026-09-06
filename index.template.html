@@ -53,6 +53,11 @@
     .fin-seance { margin:1.5rem 0 .5rem; }
     .lien-effacer { background:none; border:none; color:var(--text3,#888); text-decoration:underline; cursor:pointer; font-size:.85rem; padding:0; }
     .lien-effacer:hover { color:#b3261e; }
+    .lien-scenario { background:none; border:none; color:var(--teal); font-weight:700; text-decoration:underline; cursor:pointer; font-size:inherit; font-family:inherit; padding:0; }
+    .lien-scenario:hover { text-decoration:none; }
+    .champ-vise { animation:champ-vise 1.6s ease-out; }
+    @keyframes champ-vise { 0%,100% { box-shadow:none; } 20% { box-shadow:0 0 0 3px var(--teal); } }
+    @media (prefers-reduced-motion:reduce) { .champ-vise { animation:none; } }
     #export-toast { color:var(--teal); font-weight:600; }
     .vue-vide { padding:2rem 1rem; text-align:center; color:var(--text2,#555); }
     #projection-statut { margin:.3rem 0 .8rem; color:var(--text3,#777); }
@@ -89,7 +94,8 @@
     <details id="config" open>
       <summary>Avant le débat — réglages</summary>
       <div class="plai-card">
-        <p class="en-bref">L'outil met un <em>nom</em> sur le procédé argumentatif (généralisation abusive, appel à l'émotion, homme de paille…) — <strong>jamais</strong> un jugement de vérité, jamais un contre-argument. Ce sont les élèves qui construisent la réponse. <strong>Le plus utile : faire critiquer une réponse d'IA</strong> — colle-la dans <em>Options → Texte de départ</em>. Sinon, débat oral simple : tu notes les moments marquants. Bilan à froid dans l'onglet <strong>Débriefer</strong>. <a href="/mode-emploi" target="_blank" rel="noopener">Mode d'emploi et limites →</a></p>
+        <p class="en-bref">L'outil met un <em>nom</em> sur le procédé argumentatif (généralisation abusive, appel à l'émotion, homme de paille…) — <strong>jamais</strong> un jugement de vérité, jamais un contre-argument. Ce sont les élèves qui construisent la réponse.<br />
+        <strong>Le plus utile :</strong> <button type="button" id="aller-scenario-a" class="lien-scenario">faire critiquer une réponse d'IA →</button> (le texte s'ouvre plus bas). Sinon, débat oral simple : tu notes les moments marquants. Bilan à froid dans l'onglet <strong>Débriefer</strong>. <a href="/mode-emploi" target="_blank" rel="noopener">Mode d'emploi et limites →</a></p>
         <label for="sujet">Sujet du débat</label>
         <input id="sujet" class="plai-input" type="text"
                placeholder="Ex. : Faut-il limiter les réseaux sociaux avant 16 ans ?" />
