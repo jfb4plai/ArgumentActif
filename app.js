@@ -115,16 +115,37 @@
 </script></body></html>`;
 
   let projectionWin = null;
+  function projectionOuverte() { return !!(projectionWin && !projectionWin.closed); }
   function ouvrirProjection() {
+    if (projectionOuverte()) { projectionWin.focus(); return; } // déjà ouverte → la ramener au premier plan
     const blob = new Blob([PROJECTION_HTML], { type: 'text/html' });
     projectionWin = window.open(URL.createObjectURL(blob), 'argumentactif-projection', 'width=1280,height=720');
     if (!projectionWin) {
       alert('La fenêtre de projection a été bloquée par le navigateur. Autorise les pop-ups pour ce site, puis réessaie.');
     }
+    majProjectionStatut();
   }
   function pushToProjection() {
-    if (projectionWin && !projectionWin.closed) projectionWin.postMessage({ type: 'state', state }, '*');
+    if (projectionOuverte()) projectionWin.postMessage({ type: 'state', state }, '*');
   }
+  function majProjectionStatut() {
+    const btn = $('#ouvrir-projection');
+    const ligne = $('#projection-statut');
+    const ok = projectionOuverte();
+    if (btn) {
+      btn.textContent = ok ? '● Projection ouverte' : 'Projection ↗';
+      btn.title = ok ? 'La projection est ouverte — clic pour la ramener au premier plan' : 'Ouvrir la fenêtre de projection sur le vidéoprojecteur';
+    }
+    if (ligne) {
+      if (!$('#pendant') || $('#pendant').hidden) { ligne.hidden = true; return; }
+      ligne.hidden = false;
+      ligne.textContent = ok
+        ? 'Projection : ● ouverte.'
+        : 'Projection : ○ fermée — clique « Projection ↗ » en haut pour l’ouvrir (ou la rouvrir).';
+      ligne.classList.toggle('statut-off', !ok);
+    }
+  }
+  setInterval(majProjectionStatut, 2500); // détecte si l'enseignant a fermé la fenêtre
   window.addEventListener('message', (e) => {
     if (e.data && e.data.type === 'projection-ready') pushToProjection();
   });
@@ -343,6 +364,7 @@
     majBoutonTexte();
     majBoutonsClasser();
     majResumeSeance();
+    majProjectionStatut();
     $('#propos').focus();
   }
 
@@ -541,6 +563,7 @@
     majBoutonTexte();
     majBoutonsClasser();
     majResumeSeance();
+    majProjectionStatut();
 
     $('#demarrer').addEventListener('click', demarrer);
     $('#classer').addEventListener('click', classer);
@@ -557,7 +580,8 @@
       try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
       $('#sujet').value = ''; $('#texte-depart').value = ''; $('#source-ia').value = '';
       $('#pendant').hidden = true; $('#config').open = true;
-      renderJournal(); broadcast(); majResumeSeance();
+      if (projectionOuverte()) { try { projectionWin.close(); } catch {} projectionWin = null; }
+      renderJournal(); broadcast(); majResumeSeance(); majProjectionStatut();
     });
     document.querySelectorAll('[data-vue]').forEach((b) => b.addEventListener('click', () => showVue(b.dataset.vue)));
     document.querySelectorAll('input[name="camp"]').forEach((rd) => rd.addEventListener('change', () => {

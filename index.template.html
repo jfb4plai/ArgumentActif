@@ -45,6 +45,10 @@
     .lien-effacer:hover { color:#b3261e; }
     #export-toast { color:var(--teal); font-weight:600; }
     .vue-vide { padding:2rem 1rem; text-align:center; color:var(--text2,#555); }
+    #projection-statut { margin:.3rem 0 .8rem; font-weight:600; }
+    #projection-statut.statut-off { color:var(--orange); }
+    kbd { background:#eee; border:1px solid #ccc; border-radius:3px; padding:0 .3em; font-size:.9em; }
+    #ouvrir-projection { min-width:9.5rem; }
     .plai-nav { flex-wrap:wrap; gap:.4rem; }
     .plai-nav nav { display:flex; flex-wrap:wrap; gap:.4rem; }
     @media (max-width:640px) {
@@ -114,12 +118,13 @@
       <details id="comment-ca-marche" class="plai-card" open>
         <summary>Comment ça marche</summary>
         <ol class="deroule">
-          <li>Ouvre la projection (bouton <strong>↗ en haut à droite</strong>) et envoie-la sur le vidéoprojecteur.</li>
+          <li>Clique <strong>« Projection ↗ »</strong> (en haut) : une fenêtre s'ouvre. Envoie-la sur le vidéoprojecteur — <em>Windows</em> : touche <kbd>⊞</kbd>+<kbd>P</kbd> puis « Dupliquer » ; <em>Mac</em> : Recopie vidéo. Garde cette fenêtre ouverte pendant tout le débat.</li>
           <li>Quand un·e élève parle : note son propos ci-dessous, puis <strong>« Classer »</strong>.</li>
           <li>L'étiquette apparaît sur la projection. Recommence à chaque prise de parole.</li>
           <li>Débat terminé → onglet <strong>« Débriefer »</strong> pour l'analyse avec la classe.</li>
         </ol>
       </details>
+      <p id="projection-statut" class="aide" hidden></p>
       <div class="plai-card">
         <div class="saisie-tools">
           <button id="micro" class="plai-btn" type="button">🎤 Dicter</button>

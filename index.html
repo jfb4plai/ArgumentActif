@@ -46,6 +46,10 @@
     .lien-effacer:hover { color:#b3261e; }
     #export-toast { color:var(--teal); font-weight:600; }
     .vue-vide { padding:2rem 1rem; text-align:center; color:var(--text2,#555); }
+    #projection-statut { margin:.3rem 0 .8rem; font-weight:600; }
+    #projection-statut.statut-off { color:var(--orange); }
+    kbd { background:#eee; border:1px solid #ccc; border-radius:3px; padding:0 .3em; font-size:.9em; }
+    #ouvrir-projection { min-width:9.5rem; }
     .plai-nav { flex-wrap:wrap; gap:.4rem; }
     .plai-nav nav { display:flex; flex-wrap:wrap; gap:.4rem; }
     @media (max-width:640px) {
@@ -115,12 +119,13 @@
       <details id="comment-ca-marche" class="plai-card" open>
         <summary>Comment ça marche</summary>
         <ol class="deroule">
-          <li>Ouvre la projection (bouton <strong>↗ en haut à droite</strong>) et envoie-la sur le vidéoprojecteur.</li>
+          <li>Clique <strong>« Projection ↗ »</strong> (en haut) : une fenêtre s'ouvre. Envoie-la sur le vidéoprojecteur — <em>Windows</em> : touche <kbd>⊞</kbd>+<kbd>P</kbd> puis « Dupliquer » ; <em>Mac</em> : Recopie vidéo. Garde cette fenêtre ouverte pendant tout le débat.</li>
           <li>Quand un·e élève parle : note son propos ci-dessous, puis <strong>« Classer »</strong>.</li>
           <li>L'étiquette apparaît sur la projection. Recommence à chaque prise de parole.</li>
           <li>Débat terminé → onglet <strong>« Débriefer »</strong> pour l'analyse avec la classe.</li>
         </ol>
       </details>
+      <p id="projection-statut" class="aide" hidden></p>
       <div class="plai-card">
         <div class="saisie-tools">
           <button id="micro" class="plai-btn" type="button">🎤 Dicter</button>
@@ -708,16 +713,37 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
 <\/script></body></html>`;
 
   let projectionWin = null;
+  function projectionOuverte() { return !!(projectionWin && !projectionWin.closed); }
   function ouvrirProjection() {
+    if (projectionOuverte()) { projectionWin.focus(); return; } // déjà ouverte → la ramener au premier plan
     const blob = new Blob([PROJECTION_HTML], { type: 'text/html' });
     projectionWin = window.open(URL.createObjectURL(blob), 'argumentactif-projection', 'width=1280,height=720');
     if (!projectionWin) {
       alert('La fenêtre de projection a été bloquée par le navigateur. Autorise les pop-ups pour ce site, puis réessaie.');
     }
+    majProjectionStatut();
   }
   function pushToProjection() {
-    if (projectionWin && !projectionWin.closed) projectionWin.postMessage({ type: 'state', state }, '*');
+    if (projectionOuverte()) projectionWin.postMessage({ type: 'state', state }, '*');
   }
+  function majProjectionStatut() {
+    const btn = $('#ouvrir-projection');
+    const ligne = $('#projection-statut');
+    const ok = projectionOuverte();
+    if (btn) {
+      btn.textContent = ok ? '● Projection ouverte' : 'Projection ↗';
+      btn.title = ok ? 'La projection est ouverte — clic pour la ramener au premier plan' : 'Ouvrir la fenêtre de projection sur le vidéoprojecteur';
+    }
+    if (ligne) {
+      if (!$('#pendant') || $('#pendant').hidden) { ligne.hidden = true; return; }
+      ligne.hidden = false;
+      ligne.textContent = ok
+        ? 'Projection : ● ouverte.'
+        : 'Projection : ○ fermée — clique « Projection ↗ » en haut pour l’ouvrir (ou la rouvrir).';
+      ligne.classList.toggle('statut-off', !ok);
+    }
+  }
+  setInterval(majProjectionStatut, 2500); // détecte si l'enseignant a fermé la fenêtre
   window.addEventListener('message', (e) => {
     if (e.data && e.data.type === 'projection-ready') pushToProjection();
   });
@@ -936,6 +962,7 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     majBoutonTexte();
     majBoutonsClasser();
     majResumeSeance();
+    majProjectionStatut();
     $('#propos').focus();
   }
 
@@ -1134,6 +1161,7 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     majBoutonTexte();
     majBoutonsClasser();
     majResumeSeance();
+    majProjectionStatut();
 
     $('#demarrer').addEventListener('click', demarrer);
     $('#classer').addEventListener('click', classer);
@@ -1150,7 +1178,8 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
       try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
       $('#sujet').value = ''; $('#texte-depart').value = ''; $('#source-ia').value = '';
       $('#pendant').hidden = true; $('#config').open = true;
-      renderJournal(); broadcast(); majResumeSeance();
+      if (projectionOuverte()) { try { projectionWin.close(); } catch {} projectionWin = null; }
+      renderJournal(); broadcast(); majResumeSeance(); majProjectionStatut();
     });
     document.querySelectorAll('[data-vue]').forEach((b) => b.addEventListener('click', () => showVue(b.dataset.vue)));
     document.querySelectorAll('input[name="camp"]').forEach((rd) => rd.addEventListener('change', () => {
