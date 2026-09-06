@@ -857,6 +857,45 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
 
   function escapeHtml(s) { return String(s).replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
 
+  function ligneDebrief(u) {
+    const tr = document.createElement('tr');
+    const cat = u.categorie === 'non-classe' ? null : L.TAXONOMY[u.categorie];
+    const pistes = (L.SOCRATIC_BANK[u.categorie] || []).map((p) => '• ' + escapeHtml(p)).join('<br>');
+    const heure = u.origine === 'texte-depart' ? '—' : (u.timestamp || '').slice(11, 16);
+    const camp = u.origine === 'texte-depart' ? '—' : escapeHtml(u.camp || '—');
+    tr.innerHTML =
+      `<td>${heure}</td>` +
+      `<td>« ${escapeHtml(u.texte)} »</td>` +
+      `<td class="etiquette-cell" style="border-left:6px solid ${cat ? cat.couleur : '#999'}">${cat ? escapeHtml(cat.libelle) : 'Non classé'}${u.aVerifier ? ' ⚑' : ''}</td>` +
+      `<td>${camp}</td>` +
+      `<td>${pistes}</td>`;
+    return tr;
+  }
+
+  let grilleIaBuilt = false;
+  function buildGrilleIa() {
+    if (grilleIaBuilt) return;
+    const g = $('#grille-categories-ia');
+    if (!g) return;
+    for (const [k, v] of Object.entries(L.TAXONOMY)) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.style.borderColor = v.couleur;
+      b.innerHTML = '<strong>' + v.libelle + '</strong><br><small>' + v.definition + '</small>';
+      b.addEventListener('click', () => {
+        const passage = $('#passage-ia').value.trim();
+        if (!passage) return;
+        const u = L.createUnite({ texteSource: state.texteDepart, texte: passage, categorie: k, origine: 'texte-depart' });
+        state = L.addUnite(state, u);
+        saveState();
+        $('#passage-ia').value = '';
+        renderDebriefing();
+      });
+      g.appendChild(b);
+    }
+    grilleIaBuilt = true;
+  }
+
   function renderDebriefing() {
     const fCat = $('#f-categorie');
     if (fCat && fCat.options.length <= 1) {
@@ -869,25 +908,50 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     const masque = $('#masquer-etiquettes').checked;
     $('.debrief').classList.toggle('masque', masque);
 
-    const corps = $('#debrief-corps');
-    corps.innerHTML = '';
-    const filtrees = state.unites.filter((u) =>
-      (!catF || u.categorie === catF) && (!campF || u.camp === campF));
-    for (const u of filtrees) {
-      const tr = document.createElement('tr');
-      const cat = u.categorie === 'non-classe' ? null : L.TAXONOMY[u.categorie];
-      const pistes = (L.SOCRATIC_BANK[u.categorie] || []).map((p) => '• ' + p).join('<br>');
-      tr.innerHTML =
-        `<td>${(u.timestamp || '').slice(11, 16)}</td>` +
-        `<td>« ${escapeHtml(u.texte)} »</td>` +
-        `<td class="etiquette-cell" style="border-left:6px solid ${cat ? cat.couleur : '#999'}">${cat ? cat.libelle : 'Non classé'}${u.aVerifier ? ' ⚑' : ''}</td>` +
-        `<td>${escapeHtml(u.camp || '—')}</td>` +
-        `<td>${pistes}</td>`;
-      corps.appendChild(tr);
+    const aTexte = !!(state.texteDepart && state.texteDepart.trim());
+    $('#ref-texte-depart').hidden = !aTexte;
+    $('#etiqueter-texte').hidden = !aTexte;
+    if (aTexte) {
+      buildGrilleIa();
+      $('#ref-texte-titre').textContent = state.sourceIA
+        ? 'Texte de départ (' + state.sourceIA + ')'
+        : 'Texte de départ';
+      $('#ref-texte-contenu').textContent = state.texteDepart;
     }
+
+    const passe = (u) => (!catF || u.categorie === catF) && (!campF || u.camp === campF);
+    const duTexte = state.unites.filter((u) => u.origine === 'texte-depart' && passe(u));
+    const duDebat = state.unites.filter((u) => u.origine !== 'texte-depart' && passe(u));
+
+    const tbTexte = $('#debrief-texte');
+    const tbDebat = $('#debrief-debat');
+    tbTexte.innerHTML = '';
+    tbDebat.innerHTML = '';
+
+    if (aTexte) {
+      const tr = document.createElement('tr');
+      tr.className = 'section-titre';
+      tr.innerHTML = '<th colspan="5">Mouvements repérés dans le texte de l\'IA (par la classe)</th>';
+      tbTexte.appendChild(tr);
+      if (!duTexte.length) {
+        const vide = document.createElement('tr');
+        vide.innerHTML = '<td colspan="5" class="aide">Aucun mouvement repéré dans le texte pour l\'instant.</td>';
+        tbTexte.appendChild(vide);
+      } else {
+        for (const u of duTexte) tbTexte.appendChild(ligneDebrief(u));
+      }
+      const trD = document.createElement('tr');
+      trD.className = 'section-titre';
+      trD.innerHTML = '<th colspan="5">Mouvements des élèves pendant le débat</th>';
+      tbDebat.appendChild(trD);
+    }
+
+    for (const u of duDebat) tbDebat.appendChild(ligneDebrief(u));
+
     const aVerif = state.unites.filter((u) => u.aVerifier).length;
-    $('#debrief-compteur').textContent =
-      `${filtrees.length} unité(s) affichée(s) · ${aVerif} à vérifier par les élèves · ${state.unites.length} au total.`;
+    $('#debrief-compteur').textContent = aTexte
+      ? `${state.unites.filter((u) => u.origine === 'texte-depart').length} repérés dans le texte · ${state.unites.filter((u) => u.origine !== 'texte-depart').length} mouvements d'élèves · ${aVerif} à vérifier`
+      : `${duDebat.length} unité(s) affichée(s) · ${aVerif} à vérifier par les élèves · ${state.unites.length} au total.`;
   }
 
   // ── Reconnaissance vocale (optionnelle) ─────────────────────────
