@@ -28,10 +28,16 @@ Déploiement continu depuis GitHub (`jfb4plai/ArgumentActif`, branche `main`) ve
 | **Manuel / hors ligne** | Ne rien renseigner | aucune — l'enseignant segmente et clique la catégorie |
 
 ### Déployer le proxy (optionnel, recommandé pour une clé PLAI partagée)
-1. `api/classify.js` est déjà dans le repo.
-2. Dans Vercel → Settings → Environment Variables : ajouter `ANTHROPIC_API_KEY`
-   (et, pour restreindre le CORS, `ARGUMENTACTIF_ORIGIN=https://argumentactif.jfb4plai.com`).
-3. L'URL du proxy est `https://<déploiement>/api/classify`.
+1. `api/classify.js` est déjà dans le repo. Protections en place : verrou d'origine,
+   limitation de débit (15 req/min/IP, 800 req/h/instance — compteurs en mémoire,
+   remis à zéro à froid), plafond de taille (413 au-delà de 5000 caractères).
+2. Dans Vercel → Settings → Environment Variables :
+   - `ANTHROPIC_API_KEY` = la clé `sk-ant-…`
+   - `ARGUMENTACTIF_ORIGIN` = `https://argumentactif.jfb4plai.com` (active le verrou
+     d'origine + le CORS ; **fortement recommandé** avant d'exposer une clé perso).
+3. Redéployer. L'URL du proxy est `https://argumentactif.jfb4plai.com/api/classify`.
+4. Pour un usage à large échelle, remplacer les compteurs mémoire par un rate-limit
+   persistant (Vercel KV / Upstash).
 
 ## Scénario A — critiquer une réponse d'IA
 
