@@ -287,9 +287,14 @@
 
   function demarrer() {
     const sujet = $('#sujet').value.trim();
-    const texteDepart = $('#texte-depart').value.trim();
-    const sourceIA = $('#source-ia').value.trim();
-    state = { ...state, sujet, texteDepart, sourceIA, phase: texteDepart ? 'lecture' : 'debat' };
+    const aTexteUnits = state.unites.some((u) => u.origine === 'texte-depart');
+    const debatCommence = state.unites.some((u) => u.origine !== 'texte-depart');
+    // ne pas écraser un texte de départ déjà annoté si le champ a été vidé
+    const texteDepart = $('#texte-depart').value.trim() || (aTexteUnits ? state.texteDepart : '');
+    const sourceIA = $('#source-ia').value.trim() || (aTexteUnits ? state.sourceIA : '');
+    // rester en débat si des propos d'élèves ont déjà été classés (re-clic sur « Démarrer »)
+    const phase = (texteDepart && !debatCommence) ? 'lecture' : 'debat';
+    state = { ...state, sujet, texteDepart, sourceIA, phase };
     const modeInput = document.querySelector('input[name="mode"]:checked');
     config.mode = modeInput ? modeInput.value : 'manuel';
     config.proxyUrl = $('#proxyUrl').value.trim();
@@ -378,9 +383,10 @@
       $('#ref-texte-contenu').textContent = state.texteDepart;
     }
 
-    const passe = (u) => (!catF || u.categorie === catF) && (!campF || u.camp === campF);
-    const duTexte = state.unites.filter((u) => u.origine === 'texte-depart' && passe(u));
-    const duDebat = state.unites.filter((u) => u.origine !== 'texte-depart' && passe(u));
+    // le filtre camp ne s'applique qu'au débat live (les unités du texte n'ont pas de camp)
+    const passeCat = (u) => (!catF || u.categorie === catF);
+    const duTexte = state.unites.filter((u) => u.origine === 'texte-depart' && passeCat(u));
+    const duDebat = state.unites.filter((u) => u.origine !== 'texte-depart' && passeCat(u) && (!campF || u.camp === campF));
 
     const tbTexte = $('#debrief-texte');
     const tbDebat = $('#debrief-debat');
@@ -409,7 +415,7 @@
 
     const aVerif = state.unites.filter((u) => u.aVerifier).length;
     $('#debrief-compteur').textContent = aTexte
-      ? `${state.unites.filter((u) => u.origine === 'texte-depart').length} repérés dans le texte · ${state.unites.filter((u) => u.origine !== 'texte-depart').length} mouvements d'élèves · ${aVerif} à vérifier`
+      ? `${duTexte.length} repéré(s) dans le texte · ${duDebat.length} mouvement(s) d'élèves affichés · ${aVerif} à vérifier`
       : `${duDebat.length} unité(s) affichée(s) · ${aVerif} à vérifier par les élèves · ${state.unites.length} au total.`;
   }
 
