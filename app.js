@@ -135,10 +135,20 @@
   function renderJournal() {
     const el = journalEl();
     el.innerHTML = '';
+    let n = 0;
     for (const u of state.unites) {
       if (u.origine === 'texte-depart') continue;
       el.appendChild(renderUnite(u));
+      n++;
     }
+    const rappel = $('#rappel-debriefing');
+    if (rappel) rappel.hidden = n === 0;
+  }
+
+  function majBoutonsClasser() {
+    const manuel = config.mode === 'manuel';
+    if ($('#classer')) $('#classer').textContent = manuel ? 'Classer (choisir la catégorie)' : "Classer avec l'IA";
+    if ($('#ajouter-manuel')) $('#ajouter-manuel').hidden = manuel;
   }
 
   function renderUnite(u) {
@@ -307,6 +317,7 @@
     $('#mode-actif').textContent = 'Mode actif : ' + config.mode;
     saveState();
     majBoutonTexte();
+    majBoutonsClasser();
   }
 
   function exporter() {
@@ -489,6 +500,7 @@
       $('#mode-actif').textContent = 'Séance reprise — mode manuel. Rouvre « Avant le débat » pour re-choisir proxy/clé.';
     }
     majBoutonTexte();
+    majBoutonsClasser();
 
     $('#demarrer').addEventListener('click', demarrer);
     $('#classer').addEventListener('click', classer);

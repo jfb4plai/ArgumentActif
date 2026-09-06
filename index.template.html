@@ -36,6 +36,9 @@
     #options-avancees .options-bloc { padding:0 .75rem .5rem; }
     .options-groupe { font-weight:600; margin:.8rem 0 .3rem; }
     .reco { color:var(--teal); font-weight:400; }
+    #comment-ca-marche > summary { cursor:pointer; font-weight:600; color:var(--teal); }
+    .deroule { margin:.5rem 0 0; padding-left:1.4rem; line-height:1.6; }
+    #rappel-debriefing { margin:.8rem 0 .2rem; padding:.4rem .6rem; background:var(--surface2,#f4f2ee); border-radius:6px; }
   </style>
 </head>
 <body>
@@ -94,6 +97,15 @@
     </details>
 
     <div id="pendant" hidden>
+      <details id="comment-ca-marche" class="plai-card" open>
+        <summary>Comment ça marche</summary>
+        <ol class="deroule">
+          <li>Ouvre la projection (bouton <strong>↗ en haut à droite</strong>) et envoie-la sur le vidéoprojecteur.</li>
+          <li>Quand un·e élève parle : note son propos ci-dessous, puis <strong>« Classer »</strong>.</li>
+          <li>L'étiquette apparaît sur la projection. Recommence à chaque prise de parole.</li>
+          <li>Débat terminé → onglet <strong>« Débriefing »</strong> pour l'analyse avec la classe.</li>
+        </ol>
+      </details>
       <div class="plai-card">
         <div class="saisie-tools">
           <button id="micro" class="plai-btn" type="button">🎤 Dicter</button>
@@ -125,6 +137,7 @@
       <h2>Journal de séance</h2>
       <ol id="journal" class="journal"></ol>
 
+      <p id="rappel-debriefing" class="aide" hidden>Débat terminé ? → onglet <strong>« Débriefing »</strong> pour analyser les étiquettes avec les élèves.</p>
       <div class="pied-actions">
         <button id="exporter" class="plai-btn">Exporter le débriefing (.txt)</button>
         <button id="effacer" class="plai-btn danger">Effacer la séance</button>
