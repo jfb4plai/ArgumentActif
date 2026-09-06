@@ -234,13 +234,13 @@ function formatExport(state) {
   if (!avecTexte) {
     lignes.push(SEP);
     if (state.unites.length === 0) {
-      lignes.push('Aucune unité enregistrée.');
+      lignes.push('Aucune prise de parole enregistrée.');
     } else {
       for (const u of state.unites) lignes.push(...ligneUnite(u));
     }
     lignes.push(SEP);
-    lignes.push(`Unités à vérifier par les élèves : ${state.unites.filter((u) => u.aVerifier).length}`);
-    lignes.push(`Total d'unités : ${state.unites.length}`);
+    lignes.push(`Affirmations à vérifier par les élèves : ${state.unites.filter((u) => u.aVerifier).length}`);
+    lignes.push(`Total de prises de parole : ${state.unites.length}`);
     return lignes.join('\n');
   }
 
@@ -266,8 +266,8 @@ function formatExport(state) {
 
   lignes.push(SEP);
   lignes.push(`Mouvements repérés dans le texte de l'IA : ${duTexte.length}`);
-  lignes.push(`Mouvements des élèves : ${duDebat.length}`);
-  lignes.push(`Unités à vérifier par les élèves : ${state.unites.filter((u) => u.aVerifier).length}`);
+  lignes.push(`Prises de parole des élèves : ${duDebat.length}`);
+  lignes.push(`Affirmations à vérifier par les élèves : ${state.unites.filter((u) => u.aVerifier).length}`);
   return lignes.join('\n');
 }
 

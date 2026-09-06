@@ -37,9 +37,22 @@
     #options-avancees .options-bloc { padding:0 .75rem .5rem; }
     .options-groupe { font-weight:600; margin:.8rem 0 .3rem; }
     .reco { color:var(--teal); font-weight:400; }
-    #comment-ca-marche > summary { cursor:pointer; font-weight:600; color:var(--teal); }
+    #comment-ca-marche > summary, .debrief-aide > summary { cursor:pointer; font-weight:600; color:var(--teal); }
     .deroule { margin:.5rem 0 0; padding-left:1.4rem; line-height:1.6; }
     #rappel-debriefing { margin:.8rem 0 .2rem; padding:.4rem .6rem; background:var(--surface2,#f4f2ee); border-radius:6px; }
+    .en-bref { background:var(--surface2,#f4f2ee); border-left:4px solid var(--teal); padding:.6rem .8rem; border-radius:0 8px 8px 0; margin:0 0 1rem; line-height:1.5; }
+    .fin-seance { margin:1.5rem 0 .5rem; }
+    .lien-effacer { background:none; border:none; color:var(--text3,#888); text-decoration:underline; cursor:pointer; font-size:.85rem; padding:0; }
+    .lien-effacer:hover { color:#b3261e; }
+    #export-toast { color:var(--teal); font-weight:600; }
+    .vue-vide { padding:2rem 1rem; text-align:center; color:var(--text2,#555); }
+    .plai-nav { flex-wrap:wrap; gap:.4rem; }
+    .plai-nav nav { display:flex; flex-wrap:wrap; gap:.4rem; }
+    @media (max-width:640px) {
+      .plai-nav { justify-content:center; }
+      .plai-nav nav { width:100%; justify-content:center; }
+      .plai-nav .plai-btn { font-size:.85rem; padding:.35rem .6rem; }
+    }
   </style>
 </head>
 <body>
@@ -47,9 +60,9 @@
   <img src="public/plai-logo.jpg" alt="PLAI" style="height:32px;width:auto" />
   <strong>ArgumentActif</strong>
   <nav>
-    <button data-vue="regie" class="plai-btn" aria-pressed="true">Régie</button>
-    <button data-vue="debriefing" class="plai-btn">Débriefing</button>
-    <button id="ouvrir-projection" class="plai-btn">Ouvrir la projection ↗</button>
+    <button data-vue="regie" class="plai-btn" aria-pressed="true">Animer</button>
+    <button data-vue="debriefing" class="plai-btn">Débriefer</button>
+    <button id="ouvrir-projection" class="plai-btn">Projection ↗</button>
   </nav>
 </header>
 
@@ -58,10 +71,11 @@
     <details id="config" open>
       <summary>Avant le débat — réglages</summary>
       <div class="plai-card">
+        <p class="en-bref">Tu animes un débat en classe ; tu notes ce qui est dit ; l'outil affiche sur le tableau le <em>type</em> de mouvement argumentatif (sophisme, appel à l'émotion, généralisation…) — <strong>jamais</strong> un jugement. Ce sont les élèves qui construisent la réponse. Bilan à la fin dans l'onglet <strong>Débriefer</strong>.</p>
         <label for="sujet">Sujet du débat</label>
         <input id="sujet" class="plai-input" type="text"
                placeholder="Ex. : Faut-il limiter les réseaux sociaux avant 16 ans ?" />
-        <p class="aide">Ce sujet s'affiche sur la projection vue par la classe. Il cadre aussi la classification (le modèle sait de quoi on parle).</p>
+        <p class="aide">Ce sujet s'affiche sur la projection vue par la classe.</p>
 
         <details id="options-avancees">
           <summary>Options</summary>
@@ -104,7 +118,7 @@
           <li>Ouvre la projection (bouton <strong>↗ en haut à droite</strong>) et envoie-la sur le vidéoprojecteur.</li>
           <li>Quand un·e élève parle : note son propos ci-dessous, puis <strong>« Classer »</strong>.</li>
           <li>L'étiquette apparaît sur la projection. Recommence à chaque prise de parole.</li>
-          <li>Débat terminé → onglet <strong>« Débriefing »</strong> pour l'analyse avec la classe.</li>
+          <li>Débat terminé → onglet <strong>« Débriefer »</strong> pour l'analyse avec la classe.</li>
         </ol>
       </details>
       <div class="plai-card">
@@ -112,16 +126,16 @@
           <button id="micro" class="plai-btn" type="button">🎤 Dicter</button>
           <span id="micro-status" class="aide"></span>
           <span class="camp-choix">
-            Camp :
+            Camp (facultatif) :
             <label><input type="radio" name="camp" value="pour" /> Pour</label>
             <label><input type="radio" name="camp" value="contre" /> Contre</label>
-            <label><input type="radio" name="camp" value="" checked /> — <span class="aide">(pas de camp)</span></label>
+            <label><input type="radio" name="camp" value="" checked /> aucun</label>
           </span>
         </div>
         <label for="propos">Propos entendu (corrige avant de classer)</label>
         <textarea id="propos" class="plai-input" rows="3"
                   placeholder="Tape ou dicte ce qui vient d'être dit. Ex. : « De toute façon, si on autorise ça, bientôt tout sera permis. »"></textarea>
-        <p class="aide">Rien n'est envoyé au modèle tant que tu ne cliques pas « Classer ». Le camp est la position dans le débat, jamais un jugement sur l'élève.</p>
+        <p class="aide" id="propos-aide">Tu choisis toi-même la catégorie. Rien n'est envoyé nulle part. Le camp est facultatif — c'est la position dans le débat, jamais un jugement sur l'élève.</p>
         <div class="saisie-actions">
           <button id="classer" class="plai-btn">Classer</button>
           <button id="ajouter-manuel" class="plai-btn">Ajouter manuellement…</button>
@@ -134,20 +148,33 @@
         <p id="regie-erreur" class="plai-error" role="alert" aria-live="assertive" hidden></p>
       </div>
 
-      <h2>Journal de séance</h2>
+      <h2>Journal de séance <span id="journal-compte" class="aide"></span></h2>
       <ol id="journal" class="journal"></ol>
 
-      <p id="rappel-debriefing" class="aide" hidden>Débat terminé ? → onglet <strong>« Débriefing »</strong> pour analyser les étiquettes avec les élèves.</p>
+      <p id="rappel-debriefing" class="aide" hidden>Débat terminé ? → onglet <strong>« Débriefer »</strong> pour analyser les étiquettes avec les élèves.</p>
       <div class="pied-actions">
-        <button id="exporter" class="plai-btn">Exporter le débriefing (.txt)</button>
-        <button id="effacer" class="plai-btn danger">Effacer la séance</button>
+        <button id="exporter" class="plai-btn">Enregistrer le compte-rendu (.txt)</button>
+        <span id="export-toast" class="aide" hidden>✓ fichier téléchargé</span>
         <span id="mode-actif" class="aide"></span>
       </div>
+      <p class="fin-seance">
+        <button id="effacer" class="lien-effacer" type="button">Effacer la séance et repartir de zéro</button>
+      </p>
     </div>
   </section>
 
   <section id="vue-debriefing" class="plai-section" hidden>
-    <h1>Débriefing</h1>
+    <h1>Débriefer</h1>
+    <p id="debrief-vide" class="vue-vide" hidden>Commence par lancer un débat dans l'onglet <strong>« Animer »</strong>.</p>
+    <div id="debrief-contenu">
+    <details class="plai-card debrief-aide" open>
+      <summary>Comment débriefer avec la classe</summary>
+      <ol class="deroule">
+        <li>Reprends chaque prise de parole avec les élèves.</li>
+        <li>Coche <strong>« Masquer les étiquettes »</strong> : les élèves proposent d'abord le type, puis tu révèles.</li>
+        <li>Sers-toi de la colonne <strong>« Pistes pour réagir »</strong> pour lancer la discussion — ce sont les élèves qui formulent la réponse, pas l'outil.</li>
+      </ol>
+    </details>
 
     <div id="ref-texte-depart" class="plai-card" hidden>
       <h2 id="ref-texte-titre">Texte de départ</h2>
@@ -169,12 +196,13 @@
       <label><input type="checkbox" id="masquer-etiquettes" /> Masquer les étiquettes (les élèves proposent)</label>
     </div>
     <table class="debrief">
-      <thead><tr><th>Heure</th><th>Unité</th><th>Étiquette</th><th>Camp</th><th>Pistes pour réagir</th></tr></thead>
+      <thead><tr><th>Heure</th><th>Prise de parole</th><th>Étiquette</th><th>Camp</th><th>Pistes pour réagir</th></tr></thead>
       <tbody id="debrief-texte"></tbody>
       <tbody id="debrief-debat"></tbody>
     </table>
     <p id="debrief-compteur" class="aide"></p>
-    <button id="exporter-2" class="plai-btn">Exporter le débriefing (.txt)</button>
+    <button id="exporter-2" class="plai-btn">Enregistrer le compte-rendu (.txt)</button>
+    </div>
   </section>
 </main>
 
@@ -419,13 +447,13 @@ function formatExport(state) {
   if (!avecTexte) {
     lignes.push(SEP);
     if (state.unites.length === 0) {
-      lignes.push('Aucune unité enregistrée.');
+      lignes.push('Aucune prise de parole enregistrée.');
     } else {
       for (const u of state.unites) lignes.push(...ligneUnite(u));
     }
     lignes.push(SEP);
-    lignes.push(`Unités à vérifier par les élèves : ${state.unites.filter((u) => u.aVerifier).length}`);
-    lignes.push(`Total d'unités : ${state.unites.length}`);
+    lignes.push(`Affirmations à vérifier par les élèves : ${state.unites.filter((u) => u.aVerifier).length}`);
+    lignes.push(`Total de prises de parole : ${state.unites.length}`);
     return lignes.join('\n');
   }
 
@@ -451,8 +479,8 @@ function formatExport(state) {
 
   lignes.push(SEP);
   lignes.push(`Mouvements repérés dans le texte de l'IA : ${duTexte.length}`);
-  lignes.push(`Mouvements des élèves : ${duDebat.length}`);
-  lignes.push(`Unités à vérifier par les élèves : ${state.unites.filter((u) => u.aVerifier).length}`);
+  lignes.push(`Prises de parole des élèves : ${duDebat.length}`);
+  lignes.push(`Affirmations à vérifier par les élèves : ${state.unites.filter((u) => u.aVerifier).length}`);
   return lignes.join('\n');
 }
 
@@ -708,12 +736,18 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     }
     const rappel = $('#rappel-debriefing');
     if (rappel) rappel.hidden = n === 0;
+    const compte = $('#journal-compte');
+    if (compte) compte.textContent = n ? `— ${n} prise${n > 1 ? 's' : ''} de parole` : '';
   }
 
   function majBoutonsClasser() {
     const manuel = config.mode === 'manuel';
     if ($('#classer')) $('#classer').textContent = manuel ? 'Classer (choisir la catégorie)' : "Classer avec l'IA";
     if ($('#ajouter-manuel')) $('#ajouter-manuel').hidden = manuel;
+    const aide = $('#propos-aide');
+    if (aide) aide.textContent = manuel
+      ? "Tu choisis toi-même la catégorie. Rien n'est envoyé nulle part. Le camp est facultatif — c'est la position dans le débat, jamais un jugement sur l'élève."
+      : "Rien n'est envoyé à l'IA tant que tu ne cliques pas « Classer avec l'IA ». Tu valides sa proposition avant l'affichage. Le camp est facultatif.";
   }
 
   function renderUnite(u) {
@@ -725,7 +759,7 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     meta.className = 'meta';
 
     const selCat = document.createElement('select');
-    selCat.setAttribute('aria-label', 'Catégorie de l’unité');
+    selCat.setAttribute('aria-label', 'Catégorie de la prise de parole');
     for (const [k, v] of Object.entries(L.TAXONOMY)) {
       const o = document.createElement('option');
       o.value = k; o.textContent = v.libelle; selCat.appendChild(o);
@@ -750,13 +784,18 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
       saveState(); renderJournal();
     });
 
-    const flag = document.createElement('button');
-    flag.className = 'flag plai-btn';
-    flag.textContent = u.aVerifier ? '⚑ marqué' : '⚑ à vérifier';
-    flag.setAttribute('aria-pressed', String(u.aVerifier));
-    flag.addEventListener('click', () => {
-      state = L.toggleFlag(state, u.id); saveState(); renderJournal();
-    });
+    // le drapeau « à vérifier » n'a de sens que sur une affirmation factuelle
+    let flag = null;
+    if (u.categorie === 'affirmation-factuelle') {
+      flag = document.createElement('button');
+      flag.className = 'flag plai-btn';
+      flag.textContent = u.aVerifier ? '⚑ marqué' : '⚑ à vérifier';
+      flag.setAttribute('aria-pressed', String(u.aVerifier));
+      flag.title = 'Marquer pour vérification par les élèves';
+      flag.addEventListener('click', () => {
+        state = L.toggleFlag(state, u.id); saveState(); renderJournal();
+      });
+    }
 
     const heure = document.createElement('span');
     heure.textContent = (u.timestamp || '').slice(11, 16);
@@ -765,13 +804,15 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     retirer.className = 'retirer plai-btn';
     retirer.type = 'button';
     retirer.textContent = '✕';
-    retirer.title = 'Retirer cette unité (mauvais clic, doublon…)';
-    retirer.setAttribute('aria-label', 'Retirer cette unité');
+    retirer.title = 'Retirer cette prise de parole (mauvais clic, doublon…)';
+    retirer.setAttribute('aria-label', 'Retirer cette prise de parole');
     retirer.addEventListener('click', () => {
       state = L.removeUnite(state, u.id); saveState(); renderJournal();
     });
 
-    meta.append(heure, selCat, selCamp, flag, retirer);
+    meta.append(heure, selCat, selCamp);
+    if (flag) meta.appendChild(flag);
+    meta.appendChild(retirer);
     if (u.editee) { const e = document.createElement('span'); e.textContent = '✎'; meta.appendChild(e); }
 
     const texte = document.createElement('div');
@@ -795,6 +836,7 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
         addUnitesFromTexts([{ texte, categorie: k }], 'manuel');
         $('#propos').value = '';
         $('#choix-manuel').hidden = true;
+        $('#propos').focus();
       });
       g.appendChild(b);
     }
@@ -805,6 +847,8 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     if (origine !== 'texte-depart' && state.phase === 'lecture') {
       state = { ...state, phase: 'debat' };
     }
+    const premiereLive = origine !== 'texte-depart'
+      && !state.unites.some((u) => u.origine !== 'texte-depart');
     const source = $('#propos').value;
     for (const it of items) {
       let u = L.createUnite({ texteSource: source, texte: it.texte, categorie: it.categorie, origine });
@@ -812,6 +856,7 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
       state = L.addUnite(state, u);
     }
     saveState(); renderJournal(); majBoutonTexte();
+    if (premiereLive && $('#comment-ca-marche')) $('#comment-ca-marche').open = false;
   }
 
   async function classer() {
@@ -841,6 +886,7 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
       }
       addUnitesFromTexts(unites, 'ia');
       $('#propos').value = '';
+      $('#propos').focus();
     } catch (e) {
       const msg = e.name === 'AbortError' ? 'délai dépassé (20 s)' : (e.message || e);
       err.textContent = 'Classification automatique indisponible (' + msg +
@@ -858,6 +904,12 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     $('#vue-debriefing').hidden = nom !== 'debriefing';
     document.querySelectorAll('[data-vue]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.vue === nom)));
     if (nom === 'debriefing') renderDebriefing();
+  }
+
+  function majResumeSeance() {
+    // remplace le titre « Avant le débat — réglages » par un accès discret une fois le débat lancé
+    const sum = document.querySelector('#config > summary');
+    if (sum) sum.textContent = (state.unites.length || state.sujet) ? '⚙ Réglages du débat' : 'Avant le débat — réglages';
   }
 
   function demarrer() {
@@ -879,20 +931,24 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     $('#apiKey').value = '';
     $('#config').open = false;
     $('#pendant').hidden = false;
-    $('#mode-actif').textContent = 'Mode actif : ' + config.mode;
+    $('#mode-actif').textContent = config.mode === 'manuel' ? '' : "Aide de l'IA activée";
     saveState();
     majBoutonTexte();
     majBoutonsClasser();
+    majResumeSeance();
+    $('#propos').focus();
   }
 
   function exporter() {
     const blob = new Blob([L.formatExport(state)], { type: 'text/plain;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'argumentactif-debriefing.txt';
+    a.download = 'argumentactif-compte-rendu.txt';
     a.click();
     URL.revokeObjectURL(a.href);
     exportFait = true;
+    const toast = $('#export-toast');
+    if (toast) { toast.hidden = false; setTimeout(() => { toast.hidden = true; }, 3000); }
   }
 
   function escapeHtml(s) { return String(s).replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
@@ -902,7 +958,8 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     const cat = u.categorie === 'non-classe' ? null : L.TAXONOMY[u.categorie];
     const pistes = (L.SOCRATIC_BANK[u.categorie] || []).map((p) => '• ' + escapeHtml(p)).join('<br>');
     const heure = u.origine === 'texte-depart' ? '—' : (u.timestamp || '').slice(11, 16);
-    const camp = u.origine === 'texte-depart' ? '—' : escapeHtml(u.camp || '—');
+    const campLabel = { pour: 'Pour', contre: 'Contre' }[u.camp] || '—';
+    const camp = u.origine === 'texte-depart' ? '—' : escapeHtml(campLabel);
     tr.innerHTML =
       `<td>${heure}</td>` +
       `<td>« ${escapeHtml(u.texte)} »</td>` +
@@ -937,6 +994,11 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
   }
 
   function renderDebriefing() {
+    const vide = state.unites.length === 0 && !(state.texteDepart && state.texteDepart.trim());
+    if ($('#debrief-vide')) $('#debrief-vide').hidden = !vide;
+    if ($('#debrief-contenu')) $('#debrief-contenu').hidden = vide;
+    if (vide) return;
+
     const fCat = $('#f-categorie');
     if (fCat && fCat.options.length <= 1) {
       for (const [k, v] of Object.entries(L.TAXONOMY)) {
@@ -990,9 +1052,10 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     for (const u of duDebat) tbDebat.appendChild(ligneDebrief(u));
 
     const aVerif = state.unites.filter((u) => u.aVerifier).length;
+    const total = state.unites.filter((u) => u.origine !== 'texte-depart').length;
     $('#debrief-compteur').textContent = aTexte
-      ? `${duTexte.length} repéré(s) dans le texte · ${duDebat.length} mouvement(s) d'élèves affichés · ${aVerif} à vérifier`
-      : `${duDebat.length} unité(s) affichée(s) · ${aVerif} à vérifier par les élèves · ${state.unites.length} au total.`;
+      ? `${duTexte.length} repéré(s) dans le texte · ${duDebat.length} prise(s) de parole affichée(s) · ${aVerif} à vérifier`
+      : `${duDebat.length} prise(s) de parole affichée(s) sur ${total} · ${aVerif} affirmation(s) à vérifier`;
   }
 
   // ── Reconnaissance vocale (optionnelle) ─────────────────────────
@@ -1057,26 +1120,37 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     if (state.texteDepart || state.unites.length) {
       $('#config').open = false;
       $('#pendant').hidden = false;
-      // séance reprise : ré-ouvrir les options pour re-choisir le mode / revoir le texte
+      // séance reprise : ré-ouvrir les options pour revoir le texte / re-choisir le mode
       if ($('#options-avancees')) $('#options-avancees').open = true;
     }
     if (state.unites.length) {
-      // Le mode d'accès n'est jamais persisté (clé en mémoire de session only).
-      $('#mode-actif').textContent = 'Séance reprise — mode manuel. Rouvre « Avant le débat » pour re-choisir proxy/clé.';
+      const c = $('#comment-ca-marche');
+      if (c) c.open = false;
+      const b = document.createElement('p');
+      b.className = 'en-bref';
+      b.textContent = 'Séance récupérée. Si tu utilisais la projection ou l’aide de l’IA, pense à les ré-activer (bouton Projection en haut ; réglages ci-dessous).';
+      if (c && c.parentNode) c.parentNode.insertBefore(b, c);
     }
     majBoutonTexte();
     majBoutonsClasser();
+    majResumeSeance();
 
     $('#demarrer').addEventListener('click', demarrer);
     $('#classer').addEventListener('click', classer);
+    // Entrée dans « Propos entendu » = Classer (Maj+Entrée pour un saut de ligne)
+    $('#propos').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); classer(); }
+    });
     $('#ajouter-manuel').addEventListener('click', () => { $('#choix-manuel').hidden = !$('#choix-manuel').hidden; });
     $('#exporter').addEventListener('click', exporter);
     if ($('#exporter-2')) $('#exporter-2').addEventListener('click', exporter);
     $('#effacer').addEventListener('click', () => {
-      if (!confirm('Effacer toute la séance ? Cette action est irréversible.')) return;
-      state = L.clearSeance({ sujet: state.sujet });
+      if (!confirm('Effacer toute la séance (sujet, prises de parole, texte de départ) ? Pense à enregistrer le compte-rendu avant. Cette action est irréversible.')) return;
+      state = L.clearSeance({});
       try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
-      renderJournal(); broadcast();
+      $('#sujet').value = ''; $('#texte-depart').value = ''; $('#source-ia').value = '';
+      $('#pendant').hidden = true; $('#config').open = true;
+      renderJournal(); broadcast(); majResumeSeance();
     });
     document.querySelectorAll('[data-vue]').forEach((b) => b.addEventListener('click', () => showVue(b.dataset.vue)));
     document.querySelectorAll('input[name="camp"]').forEach((rd) => rd.addEventListener('change', () => {

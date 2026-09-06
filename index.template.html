@@ -36,9 +36,22 @@
     #options-avancees .options-bloc { padding:0 .75rem .5rem; }
     .options-groupe { font-weight:600; margin:.8rem 0 .3rem; }
     .reco { color:var(--teal); font-weight:400; }
-    #comment-ca-marche > summary { cursor:pointer; font-weight:600; color:var(--teal); }
+    #comment-ca-marche > summary, .debrief-aide > summary { cursor:pointer; font-weight:600; color:var(--teal); }
     .deroule { margin:.5rem 0 0; padding-left:1.4rem; line-height:1.6; }
     #rappel-debriefing { margin:.8rem 0 .2rem; padding:.4rem .6rem; background:var(--surface2,#f4f2ee); border-radius:6px; }
+    .en-bref { background:var(--surface2,#f4f2ee); border-left:4px solid var(--teal); padding:.6rem .8rem; border-radius:0 8px 8px 0; margin:0 0 1rem; line-height:1.5; }
+    .fin-seance { margin:1.5rem 0 .5rem; }
+    .lien-effacer { background:none; border:none; color:var(--text3,#888); text-decoration:underline; cursor:pointer; font-size:.85rem; padding:0; }
+    .lien-effacer:hover { color:#b3261e; }
+    #export-toast { color:var(--teal); font-weight:600; }
+    .vue-vide { padding:2rem 1rem; text-align:center; color:var(--text2,#555); }
+    .plai-nav { flex-wrap:wrap; gap:.4rem; }
+    .plai-nav nav { display:flex; flex-wrap:wrap; gap:.4rem; }
+    @media (max-width:640px) {
+      .plai-nav { justify-content:center; }
+      .plai-nav nav { width:100%; justify-content:center; }
+      .plai-nav .plai-btn { font-size:.85rem; padding:.35rem .6rem; }
+    }
   </style>
 </head>
 <body>
@@ -46,9 +59,9 @@
   <img src="public/plai-logo.jpg" alt="PLAI" style="height:32px;width:auto" />
   <strong>ArgumentActif</strong>
   <nav>
-    <button data-vue="regie" class="plai-btn" aria-pressed="true">Régie</button>
-    <button data-vue="debriefing" class="plai-btn">Débriefing</button>
-    <button id="ouvrir-projection" class="plai-btn">Ouvrir la projection ↗</button>
+    <button data-vue="regie" class="plai-btn" aria-pressed="true">Animer</button>
+    <button data-vue="debriefing" class="plai-btn">Débriefer</button>
+    <button id="ouvrir-projection" class="plai-btn">Projection ↗</button>
   </nav>
 </header>
 
@@ -57,10 +70,11 @@
     <details id="config" open>
       <summary>Avant le débat — réglages</summary>
       <div class="plai-card">
+        <p class="en-bref">Tu animes un débat en classe ; tu notes ce qui est dit ; l'outil affiche sur le tableau le <em>type</em> de mouvement argumentatif (sophisme, appel à l'émotion, généralisation…) — <strong>jamais</strong> un jugement. Ce sont les élèves qui construisent la réponse. Bilan à la fin dans l'onglet <strong>Débriefer</strong>.</p>
         <label for="sujet">Sujet du débat</label>
         <input id="sujet" class="plai-input" type="text"
                placeholder="Ex. : Faut-il limiter les réseaux sociaux avant 16 ans ?" />
-        <p class="aide">Ce sujet s'affiche sur la projection vue par la classe. Il cadre aussi la classification (le modèle sait de quoi on parle).</p>
+        <p class="aide">Ce sujet s'affiche sur la projection vue par la classe.</p>
 
         <details id="options-avancees">
           <summary>Options</summary>
@@ -103,7 +117,7 @@
           <li>Ouvre la projection (bouton <strong>↗ en haut à droite</strong>) et envoie-la sur le vidéoprojecteur.</li>
           <li>Quand un·e élève parle : note son propos ci-dessous, puis <strong>« Classer »</strong>.</li>
           <li>L'étiquette apparaît sur la projection. Recommence à chaque prise de parole.</li>
-          <li>Débat terminé → onglet <strong>« Débriefing »</strong> pour l'analyse avec la classe.</li>
+          <li>Débat terminé → onglet <strong>« Débriefer »</strong> pour l'analyse avec la classe.</li>
         </ol>
       </details>
       <div class="plai-card">
@@ -111,16 +125,16 @@
           <button id="micro" class="plai-btn" type="button">🎤 Dicter</button>
           <span id="micro-status" class="aide"></span>
           <span class="camp-choix">
-            Camp :
+            Camp (facultatif) :
             <label><input type="radio" name="camp" value="pour" /> Pour</label>
             <label><input type="radio" name="camp" value="contre" /> Contre</label>
-            <label><input type="radio" name="camp" value="" checked /> — <span class="aide">(pas de camp)</span></label>
+            <label><input type="radio" name="camp" value="" checked /> aucun</label>
           </span>
         </div>
         <label for="propos">Propos entendu (corrige avant de classer)</label>
         <textarea id="propos" class="plai-input" rows="3"
                   placeholder="Tape ou dicte ce qui vient d'être dit. Ex. : « De toute façon, si on autorise ça, bientôt tout sera permis. »"></textarea>
-        <p class="aide">Rien n'est envoyé au modèle tant que tu ne cliques pas « Classer ». Le camp est la position dans le débat, jamais un jugement sur l'élève.</p>
+        <p class="aide" id="propos-aide">Tu choisis toi-même la catégorie. Rien n'est envoyé nulle part. Le camp est facultatif — c'est la position dans le débat, jamais un jugement sur l'élève.</p>
         <div class="saisie-actions">
           <button id="classer" class="plai-btn">Classer</button>
           <button id="ajouter-manuel" class="plai-btn">Ajouter manuellement…</button>
@@ -133,20 +147,33 @@
         <p id="regie-erreur" class="plai-error" role="alert" aria-live="assertive" hidden></p>
       </div>
 
-      <h2>Journal de séance</h2>
+      <h2>Journal de séance <span id="journal-compte" class="aide"></span></h2>
       <ol id="journal" class="journal"></ol>
 
-      <p id="rappel-debriefing" class="aide" hidden>Débat terminé ? → onglet <strong>« Débriefing »</strong> pour analyser les étiquettes avec les élèves.</p>
+      <p id="rappel-debriefing" class="aide" hidden>Débat terminé ? → onglet <strong>« Débriefer »</strong> pour analyser les étiquettes avec les élèves.</p>
       <div class="pied-actions">
-        <button id="exporter" class="plai-btn">Exporter le débriefing (.txt)</button>
-        <button id="effacer" class="plai-btn danger">Effacer la séance</button>
+        <button id="exporter" class="plai-btn">Enregistrer le compte-rendu (.txt)</button>
+        <span id="export-toast" class="aide" hidden>✓ fichier téléchargé</span>
         <span id="mode-actif" class="aide"></span>
       </div>
+      <p class="fin-seance">
+        <button id="effacer" class="lien-effacer" type="button">Effacer la séance et repartir de zéro</button>
+      </p>
     </div>
   </section>
 
   <section id="vue-debriefing" class="plai-section" hidden>
-    <h1>Débriefing</h1>
+    <h1>Débriefer</h1>
+    <p id="debrief-vide" class="vue-vide" hidden>Commence par lancer un débat dans l'onglet <strong>« Animer »</strong>.</p>
+    <div id="debrief-contenu">
+    <details class="plai-card debrief-aide" open>
+      <summary>Comment débriefer avec la classe</summary>
+      <ol class="deroule">
+        <li>Reprends chaque prise de parole avec les élèves.</li>
+        <li>Coche <strong>« Masquer les étiquettes »</strong> : les élèves proposent d'abord le type, puis tu révèles.</li>
+        <li>Sers-toi de la colonne <strong>« Pistes pour réagir »</strong> pour lancer la discussion — ce sont les élèves qui formulent la réponse, pas l'outil.</li>
+      </ol>
+    </details>
 
     <div id="ref-texte-depart" class="plai-card" hidden>
       <h2 id="ref-texte-titre">Texte de départ</h2>
@@ -168,12 +195,13 @@
       <label><input type="checkbox" id="masquer-etiquettes" /> Masquer les étiquettes (les élèves proposent)</label>
     </div>
     <table class="debrief">
-      <thead><tr><th>Heure</th><th>Unité</th><th>Étiquette</th><th>Camp</th><th>Pistes pour réagir</th></tr></thead>
+      <thead><tr><th>Heure</th><th>Prise de parole</th><th>Étiquette</th><th>Camp</th><th>Pistes pour réagir</th></tr></thead>
       <tbody id="debrief-texte"></tbody>
       <tbody id="debrief-debat"></tbody>
     </table>
     <p id="debrief-compteur" class="aide"></p>
-    <button id="exporter-2" class="plai-btn">Exporter le débriefing (.txt)</button>
+    <button id="exporter-2" class="plai-btn">Enregistrer le compte-rendu (.txt)</button>
+    </div>
   </section>
 </main>
 

@@ -165,12 +165,12 @@ test('formatExport produit un .txt lisible avec en-tête, unités et compteur', 
   assert.match(txt, /PENTE GLISSANTE \| camp: contre/);
   assert.match(txt, /AFFIRMATION FACTUELLE VÉRIFIABLE — À VÉRIFIER \| camp: pour/);
   assert.match(txt, /"la moyenne a chuté de 3 points"/);
-  assert.match(txt, /Unités à vérifier par les élèves\s*:\s*1/);
+  assert.match(txt, /Affirmations à vérifier par les élèves\s*:\s*1/);
 });
 
 test('formatExport gère une séance vide sans planter', () => {
   const txt = L.formatExport(L.clearSeance({ sujet: '' }));
-  assert.match(txt, /Aucune unité/);
+  assert.match(txt, /Aucune prise de parole/);
 });
 
 test('formatExport n\'affiche jamais de verdict vrai/faux', () => {
@@ -295,7 +295,7 @@ test('formatExport sans texteDepart : format inchangé (liste unique)', () => {
   const txt = L.formatExport(s);
   assert.doesNotMatch(txt, /Texte de départ/);
   assert.doesNotMatch(txt, /MOUVEMENTS DES ÉLÈVES/);
-  assert.match(txt, /Total d'unités : 1/);
+  assert.match(txt, /Total de prises de parole : 1/);
 });
 
 test('formatExport avec texteDepart : en-tête + 2 sections', () => {
@@ -310,7 +310,7 @@ test('formatExport avec texteDepart : en-tête + 2 sections', () => {
   assert.match(txt, /MOUVEMENTS DES ÉLÈVES PENDANT LE DÉBAT/);
   assert.match(txt, /\[14:02\] APPEL À L'ÉMOTION \| camp: contre/);
   assert.match(txt, /Mouvements repérés dans le texte de l'IA : 1/);
-  assert.match(txt, /Mouvements des élèves : 1/);
+  assert.match(txt, /Prises de parole des élèves : 1/);
 });
 
 test('formatExport avec texteDepart mais aucune unité texte-depart', () => {

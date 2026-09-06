@@ -143,12 +143,18 @@
     }
     const rappel = $('#rappel-debriefing');
     if (rappel) rappel.hidden = n === 0;
+    const compte = $('#journal-compte');
+    if (compte) compte.textContent = n ? `— ${n} prise${n > 1 ? 's' : ''} de parole` : '';
   }
 
   function majBoutonsClasser() {
     const manuel = config.mode === 'manuel';
     if ($('#classer')) $('#classer').textContent = manuel ? 'Classer (choisir la catégorie)' : "Classer avec l'IA";
     if ($('#ajouter-manuel')) $('#ajouter-manuel').hidden = manuel;
+    const aide = $('#propos-aide');
+    if (aide) aide.textContent = manuel
+      ? "Tu choisis toi-même la catégorie. Rien n'est envoyé nulle part. Le camp est facultatif — c'est la position dans le débat, jamais un jugement sur l'élève."
+      : "Rien n'est envoyé à l'IA tant que tu ne cliques pas « Classer avec l'IA ». Tu valides sa proposition avant l'affichage. Le camp est facultatif.";
   }
 
   function renderUnite(u) {
@@ -160,7 +166,7 @@
     meta.className = 'meta';
 
     const selCat = document.createElement('select');
-    selCat.setAttribute('aria-label', 'Catégorie de l’unité');
+    selCat.setAttribute('aria-label', 'Catégorie de la prise de parole');
     for (const [k, v] of Object.entries(L.TAXONOMY)) {
       const o = document.createElement('option');
       o.value = k; o.textContent = v.libelle; selCat.appendChild(o);
@@ -185,13 +191,18 @@
       saveState(); renderJournal();
     });
 
-    const flag = document.createElement('button');
-    flag.className = 'flag plai-btn';
-    flag.textContent = u.aVerifier ? '⚑ marqué' : '⚑ à vérifier';
-    flag.setAttribute('aria-pressed', String(u.aVerifier));
-    flag.addEventListener('click', () => {
-      state = L.toggleFlag(state, u.id); saveState(); renderJournal();
-    });
+    // le drapeau « à vérifier » n'a de sens que sur une affirmation factuelle
+    let flag = null;
+    if (u.categorie === 'affirmation-factuelle') {
+      flag = document.createElement('button');
+      flag.className = 'flag plai-btn';
+      flag.textContent = u.aVerifier ? '⚑ marqué' : '⚑ à vérifier';
+      flag.setAttribute('aria-pressed', String(u.aVerifier));
+      flag.title = 'Marquer pour vérification par les élèves';
+      flag.addEventListener('click', () => {
+        state = L.toggleFlag(state, u.id); saveState(); renderJournal();
+      });
+    }
 
     const heure = document.createElement('span');
     heure.textContent = (u.timestamp || '').slice(11, 16);
@@ -200,13 +211,15 @@
     retirer.className = 'retirer plai-btn';
     retirer.type = 'button';
     retirer.textContent = '✕';
-    retirer.title = 'Retirer cette unité (mauvais clic, doublon…)';
-    retirer.setAttribute('aria-label', 'Retirer cette unité');
+    retirer.title = 'Retirer cette prise de parole (mauvais clic, doublon…)';
+    retirer.setAttribute('aria-label', 'Retirer cette prise de parole');
     retirer.addEventListener('click', () => {
       state = L.removeUnite(state, u.id); saveState(); renderJournal();
     });
 
-    meta.append(heure, selCat, selCamp, flag, retirer);
+    meta.append(heure, selCat, selCamp);
+    if (flag) meta.appendChild(flag);
+    meta.appendChild(retirer);
     if (u.editee) { const e = document.createElement('span'); e.textContent = '✎'; meta.appendChild(e); }
 
     const texte = document.createElement('div');
@@ -230,6 +243,7 @@
         addUnitesFromTexts([{ texte, categorie: k }], 'manuel');
         $('#propos').value = '';
         $('#choix-manuel').hidden = true;
+        $('#propos').focus();
       });
       g.appendChild(b);
     }
@@ -240,6 +254,8 @@
     if (origine !== 'texte-depart' && state.phase === 'lecture') {
       state = { ...state, phase: 'debat' };
     }
+    const premiereLive = origine !== 'texte-depart'
+      && !state.unites.some((u) => u.origine !== 'texte-depart');
     const source = $('#propos').value;
     for (const it of items) {
       let u = L.createUnite({ texteSource: source, texte: it.texte, categorie: it.categorie, origine });
@@ -247,6 +263,7 @@
       state = L.addUnite(state, u);
     }
     saveState(); renderJournal(); majBoutonTexte();
+    if (premiereLive && $('#comment-ca-marche')) $('#comment-ca-marche').open = false;
   }
 
   async function classer() {
@@ -276,6 +293,7 @@
       }
       addUnitesFromTexts(unites, 'ia');
       $('#propos').value = '';
+      $('#propos').focus();
     } catch (e) {
       const msg = e.name === 'AbortError' ? 'délai dépassé (20 s)' : (e.message || e);
       err.textContent = 'Classification automatique indisponible (' + msg +
@@ -293,6 +311,12 @@
     $('#vue-debriefing').hidden = nom !== 'debriefing';
     document.querySelectorAll('[data-vue]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.vue === nom)));
     if (nom === 'debriefing') renderDebriefing();
+  }
+
+  function majResumeSeance() {
+    // remplace le titre « Avant le débat — réglages » par un accès discret une fois le débat lancé
+    const sum = document.querySelector('#config > summary');
+    if (sum) sum.textContent = (state.unites.length || state.sujet) ? '⚙ Réglages du débat' : 'Avant le débat — réglages';
   }
 
   function demarrer() {
@@ -314,20 +338,24 @@
     $('#apiKey').value = '';
     $('#config').open = false;
     $('#pendant').hidden = false;
-    $('#mode-actif').textContent = 'Mode actif : ' + config.mode;
+    $('#mode-actif').textContent = config.mode === 'manuel' ? '' : "Aide de l'IA activée";
     saveState();
     majBoutonTexte();
     majBoutonsClasser();
+    majResumeSeance();
+    $('#propos').focus();
   }
 
   function exporter() {
     const blob = new Blob([L.formatExport(state)], { type: 'text/plain;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'argumentactif-debriefing.txt';
+    a.download = 'argumentactif-compte-rendu.txt';
     a.click();
     URL.revokeObjectURL(a.href);
     exportFait = true;
+    const toast = $('#export-toast');
+    if (toast) { toast.hidden = false; setTimeout(() => { toast.hidden = true; }, 3000); }
   }
 
   function escapeHtml(s) { return String(s).replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
@@ -337,7 +365,8 @@
     const cat = u.categorie === 'non-classe' ? null : L.TAXONOMY[u.categorie];
     const pistes = (L.SOCRATIC_BANK[u.categorie] || []).map((p) => '• ' + escapeHtml(p)).join('<br>');
     const heure = u.origine === 'texte-depart' ? '—' : (u.timestamp || '').slice(11, 16);
-    const camp = u.origine === 'texte-depart' ? '—' : escapeHtml(u.camp || '—');
+    const campLabel = { pour: 'Pour', contre: 'Contre' }[u.camp] || '—';
+    const camp = u.origine === 'texte-depart' ? '—' : escapeHtml(campLabel);
     tr.innerHTML =
       `<td>${heure}</td>` +
       `<td>« ${escapeHtml(u.texte)} »</td>` +
@@ -372,6 +401,11 @@
   }
 
   function renderDebriefing() {
+    const vide = state.unites.length === 0 && !(state.texteDepart && state.texteDepart.trim());
+    if ($('#debrief-vide')) $('#debrief-vide').hidden = !vide;
+    if ($('#debrief-contenu')) $('#debrief-contenu').hidden = vide;
+    if (vide) return;
+
     const fCat = $('#f-categorie');
     if (fCat && fCat.options.length <= 1) {
       for (const [k, v] of Object.entries(L.TAXONOMY)) {
@@ -425,9 +459,10 @@
     for (const u of duDebat) tbDebat.appendChild(ligneDebrief(u));
 
     const aVerif = state.unites.filter((u) => u.aVerifier).length;
+    const total = state.unites.filter((u) => u.origine !== 'texte-depart').length;
     $('#debrief-compteur').textContent = aTexte
-      ? `${duTexte.length} repéré(s) dans le texte · ${duDebat.length} mouvement(s) d'élèves affichés · ${aVerif} à vérifier`
-      : `${duDebat.length} unité(s) affichée(s) · ${aVerif} à vérifier par les élèves · ${state.unites.length} au total.`;
+      ? `${duTexte.length} repéré(s) dans le texte · ${duDebat.length} prise(s) de parole affichée(s) · ${aVerif} à vérifier`
+      : `${duDebat.length} prise(s) de parole affichée(s) sur ${total} · ${aVerif} affirmation(s) à vérifier`;
   }
 
   // ── Reconnaissance vocale (optionnelle) ─────────────────────────
@@ -492,26 +527,37 @@
     if (state.texteDepart || state.unites.length) {
       $('#config').open = false;
       $('#pendant').hidden = false;
-      // séance reprise : ré-ouvrir les options pour re-choisir le mode / revoir le texte
+      // séance reprise : ré-ouvrir les options pour revoir le texte / re-choisir le mode
       if ($('#options-avancees')) $('#options-avancees').open = true;
     }
     if (state.unites.length) {
-      // Le mode d'accès n'est jamais persisté (clé en mémoire de session only).
-      $('#mode-actif').textContent = 'Séance reprise — mode manuel. Rouvre « Avant le débat » pour re-choisir proxy/clé.';
+      const c = $('#comment-ca-marche');
+      if (c) c.open = false;
+      const b = document.createElement('p');
+      b.className = 'en-bref';
+      b.textContent = 'Séance récupérée. Si tu utilisais la projection ou l’aide de l’IA, pense à les ré-activer (bouton Projection en haut ; réglages ci-dessous).';
+      if (c && c.parentNode) c.parentNode.insertBefore(b, c);
     }
     majBoutonTexte();
     majBoutonsClasser();
+    majResumeSeance();
 
     $('#demarrer').addEventListener('click', demarrer);
     $('#classer').addEventListener('click', classer);
+    // Entrée dans « Propos entendu » = Classer (Maj+Entrée pour un saut de ligne)
+    $('#propos').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); classer(); }
+    });
     $('#ajouter-manuel').addEventListener('click', () => { $('#choix-manuel').hidden = !$('#choix-manuel').hidden; });
     $('#exporter').addEventListener('click', exporter);
     if ($('#exporter-2')) $('#exporter-2').addEventListener('click', exporter);
     $('#effacer').addEventListener('click', () => {
-      if (!confirm('Effacer toute la séance ? Cette action est irréversible.')) return;
-      state = L.clearSeance({ sujet: state.sujet });
+      if (!confirm('Effacer toute la séance (sujet, prises de parole, texte de départ) ? Pense à enregistrer le compte-rendu avant. Cette action est irréversible.')) return;
+      state = L.clearSeance({});
       try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
-      renderJournal(); broadcast();
+      $('#sujet').value = ''; $('#texte-depart').value = ''; $('#source-ia').value = '';
+      $('#pendant').hidden = true; $('#config').open = true;
+      renderJournal(); broadcast(); majResumeSeance();
     });
     document.querySelectorAll('[data-vue]').forEach((b) => b.addEventListener('click', () => showVue(b.dataset.vue)));
     document.querySelectorAll('input[name="camp"]').forEach((rd) => rd.addEventListener('change', () => {
