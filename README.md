@@ -33,6 +33,45 @@ Déploiement continu depuis GitHub (`jfb4plai/ArgumentActif`, branche `main`) ve
    (et, pour restreindre le CORS, `ARGUMENTACTIF_ORIGIN=https://argumentactif.jfb4plai.com`).
 3. L'URL du proxy est `https://<déploiement>/api/classify`.
 
+## Scénario A — critiquer une réponse d'IA
+
+1. **Avant la séance** : demande à une IA (ChatGPT, Claude, Gemini…) une réponse sur
+   un sujet. Copie-la telle quelle dans le champ **Texte de départ** ; note la
+   provenance (quelle IA, quel prompt).
+2. **En classe** : la projection affiche le texte en grand — phase de lecture commune.
+3. **Débat** : les élèves critiquent le texte. ArgumentActif étiquette **leurs**
+   mouvements argumentatifs pendant qu'ils argumentent. Dès la première unité, la
+   projection bascule sur le débat ; le bouton « Remontrer le texte de départ »
+   permet d'y revenir.
+4. **Débriefing** : mode « Masquer les étiquettes » pour faire re-identifier les
+   élèves, puis le sous-panneau « Repérer un mouvement dans le texte de l'IA » : la
+   classe étiquette à la main des passages du texte. L'export sépare les deux.
+
+**L'outil n'analyse jamais le texte de l'IA automatiquement.** Il ne reçoit que ce que
+tu tapes dans « Propos entendu ». L'étiquetage du texte de départ est toujours un clic
+humain.
+
+### Ancrage scientifique (corpus RISS, vérifié le 2026-09-06)
+
+- Pallares, *Développer les compétences argumentatives de lycéens par des débats
+  numériques sur des QSS*, thèse 2019 — HAL `tel-02934427`
+- Pallarès, de Checchi & Bächtold, *Quelle didactique pour « l'esprit critique » ?*,
+  RDST 2023 — DOI 10.4000/rdst.5221
+- de Checchi, *Liens entre croyances épistémiques et argumentation de lycéens sur des
+  QSS*, thèse 2021 — HAL `tel-03371644`
+- Barrué, *Débat sur une question socioscientifique : expertise de l'information*,
+  2017 — DOI 10.24452/sjer.39.1.5006
+- Bouazouni, *Le rôle du professeur documentaliste dans la promotion d'une approche
+  raisonnée de l'IA générative*, 2024 — HAL `dumas-04741267`
+- Clédat & Sablayrolles, *ChatGPT pour la géomatique, potentiel d'utilisation et
+  limites*, 2023 — HAL `hal-04424653`
+- Lacroux & Martin-Lacroux, *Croire ou ne pas croire les algorithmes… ?*, 2022 —
+  HAL `hal-04095500` (biais d'automation — le risque que ce format combat)
+
+Aucun travail du corpus n'évalue empiriquement un outil d'étiquetage en direct couplé
+à la critique d'une sortie d'IA : le dispositif est cohérent avec la recherche, pas
+validé par elle.
+
 ## Limites connues
 
 - **Reconnaissance vocale** : dépend du navigateur (Chrome/Edge OK, Firefox/Safari non

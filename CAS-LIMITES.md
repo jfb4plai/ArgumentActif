@@ -16,3 +16,9 @@ clic. Cette liste est ouverte — y ajouter tout cas rencontré en classe.
 | Catégories hors corpus FR (pente glissante, fausse dichotomie, homme de paille) | Documentées comme issues de la logique informelle (Hamblin 1970). Définitions calées sur Plantin 2025. |
 | Nature de la liste des 10 catégories | Typologie pédagogique, pas taxonomie scientifique exhaustive. |
 | Échec réseau / clé invalide | Bascule automatique en mode manuel, message clair, texte saisi conservé. |
+| Texte de départ très long (plusieurs pages) | Accepté. Projection : zone défilable. Débriefing : panneau défilable. Jamais tronqué. |
+| L'enseignant colle une réponse d'IA puis « Classe » un passage de ce texte | Autorisé — choix humain explicite, une phrase. L'unité est `origine: ia` (elle vient d'un appel modèle). Pour qu'elle compte comme analyse du texte, la recréer via le sous-panneau du débriefing. |
+| Unité issue du texte de l'IA : quel camp ? | Aucun. Heure et camp affichés « — ». |
+| Phase « lecture » mais texte de départ vidé après coup | La projection retombe sur l'affichage du débat. |
+| Provenance non renseignée | Projection : « Texte de départ : réponse d'IA ». Export : « provenance : (non précisée) ». |
+| Séance reprise après rechargement | `texteDepart`, `sourceIA`, `phase` sont dans `sessionStorage` → restaurés. Le mode d'accès modèle reste manuel. |
