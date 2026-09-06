@@ -28,6 +28,9 @@
     .debrief { width:100%; border-collapse:collapse; }
     .debrief th,.debrief td { border:1px solid var(--border,#ddd); padding:.4rem .6rem; text-align:left; vertical-align:top; }
     .debrief.masque .etiquette-cell { filter:blur(5px); }
+    .texte-depart-contenu { white-space:pre-wrap; font-family:inherit; margin:0; max-height:30vh; overflow:auto; background:#f4f2ee; padding:.6rem; border-radius:8px; }
+    .debrief .section-titre th { background:var(--surface2,#f0ede8); font-weight:700; }
+    .debrief tbody:empty { display:none; }
   </style>
 </head>
 <body>
@@ -50,6 +53,16 @@
         <input id="sujet" class="plai-input" type="text"
                placeholder="Ex. : Faut-il interdire les téléphones portables au collège ?" />
         <p class="aide">Ce sujet s'affiche sur la projection vue par la classe. Il cadre aussi la classification (le modèle sait de quoi on parle).</p>
+
+        <label for="texte-depart">Texte de départ — la réponse d'IA à critiquer (optionnel)</label>
+        <textarea id="texte-depart" class="plai-input" rows="5"
+                  placeholder="Colle ici la réponse produite par une IA (ChatGPT, Claude, Gemini…)."></textarea>
+        <p class="aide">L'outil ne l'analyse <strong>jamais</strong> à ta place : elle sert de matière au débat des élèves. Laisse vide pour un débat classique.</p>
+
+        <label for="source-ia">Provenance (optionnel)</label>
+        <input id="source-ia" class="plai-input" type="text"
+               placeholder="Ex. : ChatGPT — prompt « Les OGM sont-ils dangereux ? »" />
+        <p class="aide">Affichée en rappel sur la projection. Nommer l'IA et le prompt aide les élèves à situer le texte.</p>
 
         <fieldset>
           <legend>Accès au modèle</legend>
@@ -88,6 +101,7 @@
         <div class="saisie-actions">
           <button id="classer" class="plai-btn">Classer</button>
           <button id="ajouter-manuel" class="plai-btn">Ajouter manuellement…</button>
+          <button id="remontrer-texte" class="plai-btn" type="button" hidden>Remontrer le texte de départ</button>
         </div>
         <div id="choix-manuel" hidden>
           <p>Choisis la catégorie :</p>
@@ -109,6 +123,21 @@
 
   <section id="vue-debriefing" class="plai-section" hidden>
     <h1>Débriefing</h1>
+
+    <div id="ref-texte-depart" class="plai-card" hidden>
+      <h2 id="ref-texte-titre">Texte de départ</h2>
+      <pre id="ref-texte-contenu" class="texte-depart-contenu"></pre>
+    </div>
+
+    <div id="etiqueter-texte" class="plai-card" hidden>
+      <h2>Repérer un mouvement dans le texte de l'IA</h2>
+      <label for="passage-ia">Passage exact du texte de l'IA à étiqueter</label>
+      <textarea id="passage-ia" class="plai-input" rows="2"
+                placeholder="Copie ici la phrase du texte de l'IA que la classe veut étiqueter."></textarea>
+      <p class="aide">La classe choisit la catégorie d'un clic. L'outil n'analyse jamais ce texte tout seul.</p>
+      <div id="grille-categories-ia" class="grille-categories"></div>
+    </div>
+
     <div class="filtres">
       <label>Catégorie <select id="f-categorie"><option value="">toutes</option></select></label>
       <label>Camp <select id="f-camp"><option value="">tous</option><option value="pour">Pour</option><option value="contre">Contre</option><option value="autre">Autre</option></select></label>
@@ -116,7 +145,8 @@
     </div>
     <table class="debrief">
       <thead><tr><th>Heure</th><th>Unité</th><th>Étiquette</th><th>Camp</th><th>Pistes pour réagir</th></tr></thead>
-      <tbody id="debrief-corps"></tbody>
+      <tbody id="debrief-texte"></tbody>
+      <tbody id="debrief-debat"></tbody>
     </table>
     <p id="debrief-compteur" class="aide"></p>
     <button id="exporter-2" class="plai-btn">Exporter le débriefing (.txt)</button>
