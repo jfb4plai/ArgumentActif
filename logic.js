@@ -194,6 +194,44 @@ function createUnite({ texteSource, texte, categorie, origine }) {
   };
 }
 
+// ── Minuteur de débat (temps de parole par camp) ─────────────────────
+// « pour » / « contre » = secondes déjà cumulées ; « depuis » = ms du
+// démarrage du camp actif ; « actif » = qui parle maintenant (ou null).
+function chronoInitial() {
+  return { actif: null, pour: 0, contre: 0, depuis: null };
+}
+
+function chronoValeurs(chrono, maintenant) {
+  const c = chrono || chronoInitial();
+  let pour = c.pour || 0;
+  let contre = c.contre || 0;
+  if (c.actif && c.depuis) {
+    const ecoule = Math.max(0, Math.floor((maintenant - c.depuis) / 1000));
+    if (c.actif === 'pour') pour += ecoule;
+    else if (c.actif === 'contre') contre += ecoule;
+  }
+  return { pour, contre, total: pour + contre };
+}
+
+// bascule vers `camp` (« pour », « contre » ou null pour mettre en pause)
+function chronoBascule(chrono, camp, maintenant) {
+  const c = chrono || chronoInitial();
+  const v = chronoValeurs(c, maintenant); // fige le temps du camp qui parlait
+  const cible = (camp === 'pour' || camp === 'contre') ? camp : null;
+  return {
+    actif: c.actif === cible ? null : cible, // re-cliquer le même bouton = pause
+    pour: v.pour,
+    contre: v.contre,
+    depuis: (c.actif === cible ? null : cible) ? maintenant : null,
+  };
+}
+
+function formatChrono(sec) {
+  const s = Math.max(0, Math.floor(sec || 0));
+  const m = Math.floor(s / 60);
+  return String(m).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+}
+
 // ── État de séance (immutable) ───────────────────────────────────────
 function clearSeance({ sujet, texteDepart, sourceIA } = {}) {
   return {
@@ -201,6 +239,7 @@ function clearSeance({ sujet, texteDepart, sourceIA } = {}) {
     texteDepart: String(texteDepart || ''),
     sourceIA: String(sourceIA || ''),
     phase: 'debat',
+    chrono: chronoInitial(),
     unites: [],
     creeLe: new Date().toISOString(),
   };
@@ -276,6 +315,10 @@ function formatExport(state) {
   lignes.push('ArgumentActif — Débriefing du débat');
   lignes.push(`Date   : ${dateSeance}`);
   lignes.push(`Sujet  : ${state.sujet || '(non précisé)'}`);
+  if (state.chrono && (state.chrono.pour || state.chrono.contre)) {
+    const v = chronoValeurs(state.chrono, Date.now());
+    lignes.push(`Temps de parole — Pour : ${formatChrono(v.pour)} · Contre : ${formatChrono(v.contre)}`);
+  }
   if (avecTexte) {
     lignes.push(`Texte de départ — provenance : ${state.sourceIA && state.sourceIA.trim() ? state.sourceIA : '(non précisée)'}`);
     lignes.push('"""');
@@ -427,6 +470,7 @@ function buildClassifyRequest({ mode, apiKey, proxyUrl, texte, sujet }) {
 
 const api = {
   TAXONOMY, SOCRATIC_BANK, CATEGORIES, CAMPS, FAMILLES, SUJETS,
+  chronoInitial, chronoValeurs, chronoBascule, formatChrono,
   createUnite, clearSeance, addUnite, reclassifyUnite, setCamp, toggleFlag, removeUnite,
   parseModelResponse, formatExport, detectMode, buildClassifyRequest, MAX_TEXTE,
 };

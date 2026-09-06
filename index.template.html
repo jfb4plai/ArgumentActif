@@ -11,6 +11,7 @@
   <style>
     :root { --teal:#0a9370; --orange:#f97316; }
     body { font-family:'Inter',system-ui,sans-serif; }
+    [hidden] { display:none !important; }
     .aide { font-size:.85rem; color:var(--text3,#666); margin:.15rem 0 .6rem; }
     fieldset { border:1px solid var(--border,#ddd); border-radius:8px; margin:.5rem 0; }
     .grille-categories { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:.4rem; }
@@ -19,6 +20,11 @@
     .cat-famille-titre { font-weight:700; margin:0 0 .35rem; color:var(--text2,#444); }
     .cat-pas-sur { display:block; width:100%; text-align:left; padding:.5rem .7rem; margin:.2rem 0 .6rem; border-radius:8px; border:2px dashed var(--border,#bbb); background:#faf9f7; cursor:pointer; font-size:.9rem; color:var(--text2,#555); }
     .cat-pas-sur:hover { border-color:var(--teal); color:var(--teal); }
+    .minuteur-boutons { display:flex; flex-wrap:wrap; gap:.4rem; align-items:center; }
+    .minuteur-titre { font-weight:700; }
+    .minuteur .plai-btn { background:#fff; color:var(--teal); border:2px solid var(--teal); font-size:.9rem; }
+    .minuteur .plai-btn.actif { background:var(--teal); color:#fff; }
+    .minuteur-affichage { font-size:1.15rem; font-weight:600; margin:.5rem 0 0; font-variant-numeric:tabular-nums; }
     .journal { list-style:none; padding:0; display:flex; flex-direction:column; gap:.5rem; }
     .journal li { border-left:6px solid; padding:.5rem .75rem; background:#fff; border-radius:0 8px 8px 0; }
     .journal .meta { display:flex; gap:.5rem; align-items:center; font-size:.85rem; flex-wrap:wrap; }
@@ -162,6 +168,17 @@
           <div id="grille-categories" class="grille-familles"></div>
         </div>
         <p id="regie-erreur" class="plai-error" role="alert" aria-live="assertive" hidden></p>
+      </div>
+
+      <div class="plai-card minuteur">
+        <div class="minuteur-boutons">
+          <span class="minuteur-titre">⏱ Minuteur <span class="aide">(facultatif — pour équilibrer le temps de parole)</span></span>
+          <button id="chrono-pour" class="plai-btn" type="button">▶ Pour parle</button>
+          <button id="chrono-contre" class="plai-btn" type="button">▶ Contre parle</button>
+          <button id="chrono-pause" class="plai-btn" type="button">⏸ Pause</button>
+          <button id="chrono-reset" class="lien-effacer" type="button">remettre à zéro</button>
+        </div>
+        <p id="chrono-affichage" class="minuteur-affichage">Pour 00:00 · Contre 00:00 · total 00:00</p>
       </div>
 
       <h2>Journal de séance <span id="journal-compte" class="aide"></span></h2>

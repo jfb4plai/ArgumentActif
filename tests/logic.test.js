@@ -341,3 +341,33 @@ test('SUJETS : 4 thèmes non vides, prompts se terminant par ?', () => {
     for (const s of g.items) assert.match(s, /\?\s*$/);
   }
 });
+
+test('chrono : valeurs, bascule, pause, format', () => {
+  const T0 = 1_000_000;
+  let c = L.chronoInitial();
+  assert.deepEqual(L.chronoValeurs(c, T0), { pour: 0, contre: 0, total: 0 });
+  c = L.chronoBascule(c, 'pour', T0);                 // Pour commence à parler
+  assert.equal(c.actif, 'pour');
+  assert.equal(L.chronoValeurs(c, T0 + 10_000).pour, 10);   // 10 s plus tard
+  c = L.chronoBascule(c, 'contre', T0 + 10_000);      // passe à Contre
+  assert.equal(c.actif, 'contre');
+  assert.equal(c.pour, 10);
+  assert.equal(L.chronoValeurs(c, T0 + 15_000).contre, 5);
+  c = L.chronoBascule(c, 'contre', T0 + 15_000);      // re-clic même camp = pause
+  assert.equal(c.actif, null);
+  assert.deepEqual(L.chronoValeurs(c, T0 + 999_999), { pour: 10, contre: 5, total: 15 });
+  assert.equal(L.formatChrono(75), '01:15');
+  assert.equal(L.formatChrono(0), '00:00');
+});
+
+test('clearSeance initialise un chrono à zéro', () => {
+  const s = L.clearSeance({ sujet: 'x' });
+  assert.deepEqual(s.chrono, { actif: null, pour: 0, contre: 0, depuis: null });
+});
+
+test('formatExport ajoute le temps de parole si le chrono a tourné', () => {
+  let s = L.clearSeance({ sujet: 'x' });
+  s = { ...s, chrono: { actif: null, pour: 312, contre: 288, depuis: null } };
+  s = L.addUnite(s, L.createUnite({ texteSource: 'a', texte: 'b', categorie: 'opinion', origine: 'manuel' }));
+  assert.match(L.formatExport(s), /Temps de parole — Pour : 05:12 · Contre : 04:48/);
+});

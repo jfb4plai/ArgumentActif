@@ -12,6 +12,7 @@
   <style>
     :root { --teal:#0a9370; --orange:#f97316; }
     body { font-family:'Inter',system-ui,sans-serif; }
+    [hidden] { display:none !important; }
     .aide { font-size:.85rem; color:var(--text3,#666); margin:.15rem 0 .6rem; }
     fieldset { border:1px solid var(--border,#ddd); border-radius:8px; margin:.5rem 0; }
     .grille-categories { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:.4rem; }
@@ -20,6 +21,11 @@
     .cat-famille-titre { font-weight:700; margin:0 0 .35rem; color:var(--text2,#444); }
     .cat-pas-sur { display:block; width:100%; text-align:left; padding:.5rem .7rem; margin:.2rem 0 .6rem; border-radius:8px; border:2px dashed var(--border,#bbb); background:#faf9f7; cursor:pointer; font-size:.9rem; color:var(--text2,#555); }
     .cat-pas-sur:hover { border-color:var(--teal); color:var(--teal); }
+    .minuteur-boutons { display:flex; flex-wrap:wrap; gap:.4rem; align-items:center; }
+    .minuteur-titre { font-weight:700; }
+    .minuteur .plai-btn { background:#fff; color:var(--teal); border:2px solid var(--teal); font-size:.9rem; }
+    .minuteur .plai-btn.actif { background:var(--teal); color:#fff; }
+    .minuteur-affichage { font-size:1.15rem; font-weight:600; margin:.5rem 0 0; font-variant-numeric:tabular-nums; }
     .journal { list-style:none; padding:0; display:flex; flex-direction:column; gap:.5rem; }
     .journal li { border-left:6px solid; padding:.5rem .75rem; background:#fff; border-radius:0 8px 8px 0; }
     .journal .meta { display:flex; gap:.5rem; align-items:center; font-size:.85rem; flex-wrap:wrap; }
@@ -163,6 +169,17 @@
           <div id="grille-categories" class="grille-familles"></div>
         </div>
         <p id="regie-erreur" class="plai-error" role="alert" aria-live="assertive" hidden></p>
+      </div>
+
+      <div class="plai-card minuteur">
+        <div class="minuteur-boutons">
+          <span class="minuteur-titre">⏱ Minuteur <span class="aide">(facultatif — pour équilibrer le temps de parole)</span></span>
+          <button id="chrono-pour" class="plai-btn" type="button">▶ Pour parle</button>
+          <button id="chrono-contre" class="plai-btn" type="button">▶ Contre parle</button>
+          <button id="chrono-pause" class="plai-btn" type="button">⏸ Pause</button>
+          <button id="chrono-reset" class="lien-effacer" type="button">remettre à zéro</button>
+        </div>
+        <p id="chrono-affichage" class="minuteur-affichage">Pour 00:00 · Contre 00:00 · total 00:00</p>
       </div>
 
       <h2>Journal de séance <span id="journal-compte" class="aide"></span></h2>
@@ -425,6 +442,44 @@ function createUnite({ texteSource, texte, categorie, origine }) {
   };
 }
 
+// ── Minuteur de débat (temps de parole par camp) ─────────────────────
+// « pour » / « contre » = secondes déjà cumulées ; « depuis » = ms du
+// démarrage du camp actif ; « actif » = qui parle maintenant (ou null).
+function chronoInitial() {
+  return { actif: null, pour: 0, contre: 0, depuis: null };
+}
+
+function chronoValeurs(chrono, maintenant) {
+  const c = chrono || chronoInitial();
+  let pour = c.pour || 0;
+  let contre = c.contre || 0;
+  if (c.actif && c.depuis) {
+    const ecoule = Math.max(0, Math.floor((maintenant - c.depuis) / 1000));
+    if (c.actif === 'pour') pour += ecoule;
+    else if (c.actif === 'contre') contre += ecoule;
+  }
+  return { pour, contre, total: pour + contre };
+}
+
+// bascule vers `camp` (« pour », « contre » ou null pour mettre en pause)
+function chronoBascule(chrono, camp, maintenant) {
+  const c = chrono || chronoInitial();
+  const v = chronoValeurs(c, maintenant); // fige le temps du camp qui parlait
+  const cible = (camp === 'pour' || camp === 'contre') ? camp : null;
+  return {
+    actif: c.actif === cible ? null : cible, // re-cliquer le même bouton = pause
+    pour: v.pour,
+    contre: v.contre,
+    depuis: (c.actif === cible ? null : cible) ? maintenant : null,
+  };
+}
+
+function formatChrono(sec) {
+  const s = Math.max(0, Math.floor(sec || 0));
+  const m = Math.floor(s / 60);
+  return String(m).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+}
+
 // ── État de séance (immutable) ───────────────────────────────────────
 function clearSeance({ sujet, texteDepart, sourceIA } = {}) {
   return {
@@ -432,6 +487,7 @@ function clearSeance({ sujet, texteDepart, sourceIA } = {}) {
     texteDepart: String(texteDepart || ''),
     sourceIA: String(sourceIA || ''),
     phase: 'debat',
+    chrono: chronoInitial(),
     unites: [],
     creeLe: new Date().toISOString(),
   };
@@ -507,6 +563,10 @@ function formatExport(state) {
   lignes.push('ArgumentActif — Débriefing du débat');
   lignes.push(`Date   : ${dateSeance}`);
   lignes.push(`Sujet  : ${state.sujet || '(non précisé)'}`);
+  if (state.chrono && (state.chrono.pour || state.chrono.contre)) {
+    const v = chronoValeurs(state.chrono, Date.now());
+    lignes.push(`Temps de parole — Pour : ${formatChrono(v.pour)} · Contre : ${formatChrono(v.contre)}`);
+  }
   if (avecTexte) {
     lignes.push(`Texte de départ — provenance : ${state.sourceIA && state.sourceIA.trim() ? state.sourceIA : '(non précisée)'}`);
     lignes.push('"""');
@@ -658,6 +718,7 @@ function buildClassifyRequest({ mode, apiKey, proxyUrl, texte, sujet }) {
 
 const api = {
   TAXONOMY, SOCRATIC_BANK, CATEGORIES, CAMPS, FAMILLES, SUJETS,
+  chronoInitial, chronoValeurs, chronoBascule, formatChrono,
   createUnite, clearSeance, addUnite, reclassifyUnite, setCamp, toggleFlag, removeUnite,
   parseModelResponse, formatExport, detectMode, buildClassifyRequest, MAX_TEXTE,
 };
@@ -682,7 +743,12 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
   function loadState() {
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
+      const s = raw ? JSON.parse(raw) : null;
+      if (s && !s.chrono) s.chrono = L.chronoInitial();          // migration
+      if (s && s.chrono && s.chrono.actif) {                     // au rechargement : minuteur en pause
+        s.chrono = { ...s.chrono, actif: null, depuis: null };
+      }
+      return s;
     } catch { return null; }
   }
   function saveState() {
@@ -720,10 +786,13 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
   #provenance{font-size:1.1vw;opacity:.7;text-align:center;margin-bottom:2vh}
   #lecture{flex:1;width:100%;max-width:80ch;overflow:auto;white-space:pre-wrap;font-size:1.5vw;line-height:1.5;background:#0f172a;border-radius:.6em;padding:2vh 2.5vw;box-sizing:border-box}
   #rappel-texte{font-size:1vw;opacity:.6;text-align:center;margin-bottom:1.5vh}
+  #chrono-proj{font-size:1.6vw;font-weight:700;text-align:center;margin-bottom:1.5vh;font-variant-numeric:tabular-nums}
+  #chrono-proj .actif{color:#fbbf24}
   [hidden]{display:none!important}
 </style></head><body>
 <div id="bandeau">Cet outil repère un type de mouvement de discours. Il ne juge ni la personne qui parle, ni la vérité de ce qui est dit.</div>
 <div id="sujet"></div>
+<div id="chrono-proj" hidden></div>
 <div id="provenance"></div>
 <div id="rappel-texte"></div>
 <div id="lecture" hidden></div>
@@ -743,6 +812,17 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     const lectureEl = document.getElementById('lecture');
     const legendeEl = document.getElementById('legende');
     sujetEl.textContent = (state && state.sujet) ? 'Débat : ' + state.sujet : '';
+    // minuteur
+    var chp = document.getElementById('chrono-proj');
+    var chr = state && state.chrono;
+    if (chr && (chr.pour || chr.contre || chr.actif)) {
+      var pv = (chr.pour || 0) + (chr.actif === 'pour' && chr.depuis ? Math.floor((Date.now() - chr.depuis) / 1000) : 0);
+      var cv = (chr.contre || 0) + (chr.actif === 'contre' && chr.depuis ? Math.floor((Date.now() - chr.depuis) / 1000) : 0);
+      var fmt = function (x) { var s = Math.max(0, x); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
+      chp.innerHTML = '<span class="' + (chr.actif === 'pour' ? 'actif' : '') + '">Pour ' + fmt(pv) + '</span>'
+        + '  ·  <span class="' + (chr.actif === 'contre' ? 'actif' : '') + '">Contre ' + fmt(cv) + '</span>';
+      chp.hidden = false;
+    } else { chp.hidden = true; }
     const aTexte = !!(state && state.texteDepart);
     const enLecture = aTexte && state.phase === 'lecture';
 
@@ -825,6 +905,32 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
   });
 
   const $ = (s) => document.querySelector(s);
+
+  // ── Minuteur de débat ────────────────────────────────────────────
+  function chronoBasculer(camp) {
+    state = { ...state, chrono: L.chronoBascule(state.chrono || L.chronoInitial(), camp, Date.now()) };
+    saveState();
+    majChrono();
+  }
+  function chronoRaz() {
+    state = { ...state, chrono: L.chronoInitial() };
+    saveState();
+    majChrono();
+  }
+  function majChrono() {
+    const c = state.chrono || L.chronoInitial();
+    const v = L.chronoValeurs(c, Date.now());
+    const aff = $('#chrono-affichage');
+    if (aff) aff.textContent = `Pour ${L.formatChrono(v.pour)} · Contre ${L.formatChrono(v.contre)} · total ${L.formatChrono(v.total)}`;
+    const bp = $('#chrono-pour'), bc = $('#chrono-contre');
+    if (bp) bp.classList.toggle('actif', c.actif === 'pour');
+    if (bc) bc.classList.toggle('actif', c.actif === 'contre');
+  }
+  setInterval(() => {
+    if (!$('#pendant') || $('#pendant').hidden) return;
+    majChrono();
+    if (state.chrono && state.chrono.actif) pushToProjection(); // garde la projection à la seconde
+  }, 1000);
   const journalEl = () => $('#journal');
 
   function renderJournal() {
@@ -1072,6 +1178,7 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     majBoutonsClasser();
     majResumeSeance();
     majProjectionStatut();
+    majChrono();
     $('#propos').focus();
   }
 
@@ -1275,13 +1382,22 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
       if (c) c.open = false;
       const b = document.createElement('p');
       b.className = 'en-bref';
-      b.textContent = 'Séance récupérée. Si tu utilisais la projection ou l’aide de l’IA, pense à les ré-activer (bouton Projection en haut ; réglages ci-dessous).';
+      b.textContent = 'Séance récupérée. Le minuteur est en pause. Si tu utilisais la projection ou l’aide de l’IA, pense à les ré-activer (bouton Projection en haut ; réglages ci-dessous).';
       if (c && c.parentNode) c.parentNode.insertBefore(b, c);
     }
     majBoutonTexte();
     majBoutonsClasser();
     majResumeSeance();
     majProjectionStatut();
+    majChrono();
+
+    $('#chrono-pour').addEventListener('click', () => chronoBasculer('pour'));
+    $('#chrono-contre').addEventListener('click', () => chronoBasculer('contre'));
+    $('#chrono-pause').addEventListener('click', () => chronoBasculer(null));
+    $('#chrono-reset').addEventListener('click', () => {
+      if (state.chrono && (state.chrono.pour || state.chrono.contre) && !confirm('Remettre le minuteur à zéro ?')) return;
+      chronoRaz();
+    });
 
     $('#demarrer').addEventListener('click', demarrer);
     $('#classer').addEventListener('click', classer);
