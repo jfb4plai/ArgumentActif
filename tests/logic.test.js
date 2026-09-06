@@ -281,3 +281,41 @@ test('createUnite accepte origine "texte-depart"', () => {
 test('createUnite refuse toujours une origine inconnue', () => {
   assert.throws(() => L.createUnite({ texteSource: 'x', texte: 'x', categorie: 'opinion', origine: 'robot' }), /origine/i);
 });
+
+test('formatExport sans texteDepart : format inchangé (liste unique)', () => {
+  let s = L.clearSeance({ sujet: 'Sujet X' });
+  s = L.addUnite(s, { ...L.createUnite({ texteSource: 'a', texte: 'phrase', categorie: 'opinion', origine: 'manuel' }), timestamp: '2026-09-06T10:00:00.000Z' });
+  const txt = L.formatExport(s);
+  assert.doesNotMatch(txt, /Texte de départ/);
+  assert.doesNotMatch(txt, /MOUVEMENTS DES ÉLÈVES/);
+  assert.match(txt, /Total d'unités : 1/);
+});
+
+test('formatExport avec texteDepart : en-tête + 2 sections', () => {
+  let s = L.clearSeance({ sujet: 'Les OGM', texteDepart: 'Les OGM sont sans danger.', sourceIA: 'ChatGPT — prompt « OGM ? »' });
+  s = L.addUnite(s, { ...L.createUnite({ texteSource: s.texteDepart, texte: 'les OGM sont tous identiques', categorie: 'generalisation-abusive', origine: 'texte-depart' }) });
+  s = L.addUnite(s, { ...L.createUnite({ texteSource: 'a', texte: 'on va être empoisonnés', categorie: 'appel-emotion', origine: 'manuel' }), timestamp: '2026-09-06T14:02:00.000Z', camp: 'contre' });
+  const txt = L.formatExport(s);
+  assert.match(txt, /Texte de départ — provenance : ChatGPT — prompt « OGM \? »/);
+  assert.match(txt, /"""\nLes OGM sont sans danger\.\n"""/);
+  assert.match(txt, /MOUVEMENTS REPÉRÉS DANS LE TEXTE DE L'IA \(par la classe\)/);
+  assert.match(txt, /\[--:--\] GÉNÉRALISATION ABUSIVE/);
+  assert.match(txt, /MOUVEMENTS DES ÉLÈVES PENDANT LE DÉBAT/);
+  assert.match(txt, /\[14:02\] APPEL À L'ÉMOTION \| camp: contre/);
+  assert.match(txt, /Mouvements repérés dans le texte de l'IA : 1/);
+  assert.match(txt, /Mouvements des élèves : 1/);
+});
+
+test('formatExport avec texteDepart mais aucune unité texte-depart', () => {
+  let s = L.clearSeance({ sujet: 'X', texteDepart: 'blabla', sourceIA: '' });
+  s = L.addUnite(s, L.createUnite({ texteSource: 'a', texte: 'phrase', categorie: 'opinion', origine: 'manuel' }));
+  const txt = L.formatExport(s);
+  assert.match(txt, /provenance : \(non précisée\)/);
+  assert.match(txt, /\(aucun mouvement repéré dans le texte pour l'instant\)/);
+});
+
+test('formatExport n\'affiche jamais de verdict vrai/faux (avec texteDepart)', () => {
+  let s = L.clearSeance({ sujet: 's', texteDepart: 'x', sourceIA: 'y' });
+  s = L.addUnite(s, L.createUnite({ texteSource: 'x', texte: 'z', categorie: 'affirmation-factuelle', origine: 'texte-depart' }));
+  assert.doesNotMatch(L.formatExport(s), /\b(vrai|faux|correct|incorrect|erroné)\b/i);
+});

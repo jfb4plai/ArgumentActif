@@ -193,40 +193,81 @@ function parseModelResponse(raw) {
     .filter((u) => u.texte.length > 0);
 }
 
+function ligneUnite(u) {
+  const heure = u.origine === 'texte-depart' ? '--:--' : (u.timestamp || '').slice(11, 16);
+  const cat = u.categorie === 'non-classe'
+    ? 'NON CLASSÉ'
+    : TAXONOMY[u.categorie].libelle.toUpperCase();
+  const flag = u.aVerifier ? ' — À VÉRIFIER' : '';
+  const camp = u.camp ? ` | camp: ${u.camp}` : '';
+  const edit = u.editee ? ' | (catégorie ajustée)' : '';
+  const out = [`[${heure}] ${cat}${flag}${camp}${edit}`, `   "${u.texte}"`];
+  const pistes = SOCRATIC_BANK[u.categorie] || [];
+  if (pistes.length) out.push(`   Piste pour réagir : ${pistes[0]}`);
+  out.push('');
+  return out;
+}
+
 function formatExport(state) {
+  const SEP = '—'.repeat(60);
   const dateSeance = (state.creeLe || '').slice(0, 10) || new Date().toISOString().slice(0, 10);
+  const avecTexte = !!(state.texteDepart && state.texteDepart.trim());
   const lignes = [];
-  lignes.push(`ArgumentActif — Débriefing du débat`);
+
+  lignes.push('ArgumentActif — Débriefing du débat');
   lignes.push(`Date   : ${dateSeance}`);
   lignes.push(`Sujet  : ${state.sujet || '(non précisé)'}`);
+  if (avecTexte) {
+    lignes.push(`Texte de départ — provenance : ${state.sourceIA && state.sourceIA.trim() ? state.sourceIA : '(non précisée)'}`);
+    lignes.push('"""');
+    lignes.push(state.texteDepart);
+    lignes.push('"""');
+  }
   lignes.push('');
   lignes.push('Rappel : cet outil repère un type de mouvement de discours.');
   lignes.push('Il ne juge ni la personne qui parle, ni la vérité de ce qui est dit.');
   lignes.push('');
-  lignes.push('—'.repeat(60));
 
-  if (state.unites.length === 0) {
-    lignes.push('Aucune unité enregistrée.');
-  } else {
-    for (const u of state.unites) {
-      const heure = (u.timestamp || '').slice(11, 16);
-      const cat = u.categorie === 'non-classe'
-        ? 'NON CLASSÉ'
-        : TAXONOMY[u.categorie].libelle.toUpperCase();
-      const flag = u.aVerifier ? ' — À VÉRIFIER' : '';
-      const camp = u.camp ? ` | camp: ${u.camp}` : '';
-      const edit = u.editee ? ' | (catégorie ajustée)' : '';
-      lignes.push(`[${heure}] ${cat}${flag}${camp}${edit}`);
-      lignes.push(`   "${u.texte}"`);
-      const pistes = SOCRATIC_BANK[u.categorie] || [];
-      if (pistes.length) lignes.push(`   Piste pour réagir : ${pistes[0]}`);
-      lignes.push('');
+  const duTexte = state.unites.filter((u) => u.origine === 'texte-depart');
+  const duDebat = state.unites.filter((u) => u.origine !== 'texte-depart');
+
+  if (!avecTexte) {
+    lignes.push(SEP);
+    if (state.unites.length === 0) {
+      lignes.push('Aucune unité enregistrée.');
+    } else {
+      for (const u of state.unites) lignes.push(...ligneUnite(u));
     }
+    lignes.push(SEP);
+    lignes.push(`Unités à vérifier par les élèves : ${state.unites.filter((u) => u.aVerifier).length}`);
+    lignes.push(`Total d'unités : ${state.unites.length}`);
+    return lignes.join('\n');
   }
-  lignes.push('—'.repeat(60));
-  const aVerif = state.unites.filter((u) => u.aVerifier).length;
-  lignes.push(`Unités à vérifier par les élèves : ${aVerif}`);
-  lignes.push(`Total d'unités : ${state.unites.length}`);
+
+  lignes.push(SEP);
+  lignes.push("MOUVEMENTS REPÉRÉS DANS LE TEXTE DE L'IA (par la classe)");
+  lignes.push('');
+  if (duTexte.length === 0) {
+    lignes.push("(aucun mouvement repéré dans le texte pour l'instant)");
+    lignes.push('');
+  } else {
+    for (const u of duTexte) lignes.push(...ligneUnite(u));
+  }
+
+  lignes.push(SEP);
+  lignes.push('MOUVEMENTS DES ÉLÈVES PENDANT LE DÉBAT');
+  lignes.push('');
+  if (duDebat.length === 0) {
+    lignes.push('(aucun mouvement d\'élève enregistré)');
+    lignes.push('');
+  } else {
+    for (const u of duDebat) lignes.push(...ligneUnite(u));
+  }
+
+  lignes.push(SEP);
+  lignes.push(`Mouvements repérés dans le texte de l'IA : ${duTexte.length}`);
+  lignes.push(`Mouvements des élèves : ${duDebat.length}`);
+  lignes.push(`Unités à vérifier par les élèves : ${state.unites.filter((u) => u.aVerifier).length}`);
   return lignes.join('\n');
 }
 
