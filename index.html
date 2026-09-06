@@ -90,7 +90,7 @@
     <details id="config" open>
       <summary>Avant le débat — réglages</summary>
       <div class="plai-card">
-        <p class="en-bref">Tu animes un débat en classe ; tu notes ce qui est dit ; l'outil affiche sur le tableau le <em>type</em> de mouvement argumentatif (sophisme, appel à l'émotion, généralisation…) — <strong>jamais</strong> un jugement. Ce sont les élèves qui construisent la réponse. Bilan à la fin dans l'onglet <strong>Débriefer</strong>.</p>
+        <p class="en-bref">L'outil met un <em>nom</em> sur le procédé argumentatif (généralisation abusive, appel à l'émotion, homme de paille…) — <strong>jamais</strong> un jugement de vérité, jamais un contre-argument. Ce sont les élèves qui construisent la réponse. <strong>Le plus utile : faire critiquer une réponse d'IA</strong> — colle-la dans <em>Options → Texte de départ</em>. Sinon, débat oral simple : tu notes les moments marquants. Bilan à froid dans l'onglet <strong>Débriefer</strong>. <a href="/mode-emploi" target="_blank" rel="noopener">Mode d'emploi et limites →</a></p>
         <label for="sujet">Sujet du débat</label>
         <input id="sujet" class="plai-input" type="text"
                placeholder="Ex. : Faut-il limiter les réseaux sociaux avant 16 ans ?" />
@@ -102,11 +102,11 @@
         <details id="options-avancees">
           <summary>Options</summary>
           <div class="options-bloc">
-            <p class="options-groupe">Faire critiquer une réponse d'IA</p>
-            <label for="texte-depart">Texte de départ (optionnel)</label>
+            <p class="options-groupe">Faire critiquer une réponse d'IA <span class="reco">— scénario recommandé</span></p>
+            <label for="texte-depart">Texte de départ</label>
             <textarea id="texte-depart" class="plai-input" rows="5"
                       placeholder="Colle ici la réponse produite par une IA (ChatGPT, Claude, Gemini…)."></textarea>
-            <p class="aide">L'outil ne l'analyse <strong>jamais</strong> à ta place : elle sert de matière au débat des élèves. Laisse vide pour un débat classique.</p>
+            <p class="aide">La classe lit ce texte projeté en grand, puis le critique ; l'outil étiquette les interventions des élèves. L'outil ne l'analyse <strong>jamais</strong> à ta place. Laisse vide pour un débat oral simple.</p>
 
             <label for="source-ia">Provenance (optionnel)</label>
             <input id="source-ia" class="plai-input" type="text"
@@ -137,10 +137,10 @@
       <details id="comment-ca-marche" class="plai-card">
         <summary>Comment ça marche (à lire une fois)</summary>
         <ol class="deroule">
-          <li>Clique <strong>« Projection ↗ »</strong> (en haut) : une fenêtre s'ouvre. Envoie-la sur le vidéoprojecteur — <em>Windows</em> : touche <kbd>⊞</kbd>+<kbd>P</kbd> puis « Dupliquer » ; <em>Mac</em> : Recopie vidéo. Garde cette fenêtre ouverte pendant tout le débat.</li>
-          <li>Quand un·e élève parle : note son propos ci-dessous, puis <strong>« Classer »</strong> (touche Entrée).</li>
-          <li>L'étiquette apparaît sur la projection. Recommence à chaque prise de parole.</li>
-          <li>Débat terminé → onglet <strong>« Débriefer »</strong> pour l'analyse avec la classe.</li>
+          <li>Clique <strong>« Projection ↗ »</strong> (en haut) : une fenêtre s'ouvre. Envoie-la sur le vidéoprojecteur — <em>Windows</em> : touche <kbd>⊞</kbd>+<kbd>P</kbd> puis « Dupliquer » ; <em>Mac</em> : Recopie vidéo. Garde cette fenêtre ouverte.</li>
+          <li>Quand un propos mérite qu'on s'y arrête : note-le ci-dessous, puis <strong>« Classer »</strong> (touche Entrée).</li>
+          <li>L'étiquette apparaît sur la projection, comme point d'entrée pour discuter — pas comme verdict. Ne cherche pas à tout relever : 4 à 6 moments suffisent.</li>
+          <li>Séance terminée → onglet <strong>« Débriefer »</strong> : c'est là, à froid, que se fait l'analyse avec la classe.</li>
         </ol>
       </details>
       <p id="projection-statut" class="aide" hidden></p>

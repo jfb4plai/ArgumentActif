@@ -1,10 +1,29 @@
 # ArgumentActif
 
-Outil web autonome pour entraîner des élèves du secondaire (FWB) à l'argumentation
-pendant des débats structurés. L'outil **repère et étiquette** le type de mouvement
-argumentatif employé (sophisme, appel à l'émotion, généralisation abusive…). Il ne
-génère **jamais** de réplique, de contre-argument ni de verdict de vérité — les élèves
-construisent eux-mêmes la réponse.
+Outil web autonome pour le secondaire (FWB) : il met un **nom** sur le type de mouvement
+argumentatif employé (sophisme, appel à l'émotion, généralisation abusive…), comme une
+étiquette descriptive. Il ne génère **jamais** de réplique, de contre-argument ni de
+verdict de vérité — les élèves construisent eux-mêmes la réponse.
+
+**Deux scénarios, par valeur ajoutée décroissante :**
+
+1. **Critiquer une réponse d'IA (« texte de départ ») — recommandé.** Un texte figé, le
+   même pour toute la classe, analysé posément : pas de goulot de transcription, on peut
+   délibérer. C'est le scénario le mieux étayé par la recherche (voir *Scénario A* plus bas).
+2. **Étiqueter un débat oral en direct.** Possible, mais c'est le mode le plus exigeant à
+   animer (transcrire en temps réel + modérer + projeter) et le moins validé. L'étiquetage
+   complet se fait de toute façon **au débriefing**, à froid. À réserver à une classe déjà
+   rodée au débat réglé, en visant 4-6 moments marquants, pas l'exhaustivité.
+
+Là où l'outil apporte le plus : la **préparation** (choix et cadrage du texte / du sujet)
+et le **débriefing guidé**. L'affichage en direct est un support, pas un oracle.
+
+> **Limite de fond.** Nommer un procédé n'est pas le comprendre : le risque connu est la
+> « chasse aux sophismes » (lancer « homme de paille ! » comme un coup, sans examiner le
+> raisonnement). L'étiquette ne vaut que si elle ouvre une discussion sur le fond. Et un
+> élève fragile est *plus* exposé à l'oral analysé en direct, pas moins — d'où la
+> préférence pour le Scénario A, où l'objet critiqué est la machine. Dispositif cohérent
+> avec la recherche, **pas validé par elle**. Voir *Limites connues*.
 
 ## Lancer l'app
 
@@ -102,6 +121,15 @@ thèse 2013, HAL `tel-00962300`), ancrées dans le contexte FWB.
 
 ## Limites connues
 
+- **Nommer ≠ comprendre.** Le risque connu est la « chasse aux sophismes » : l'élève
+  apprend à étiqueter comme coup de débat au lieu d'examiner le raisonnement. L'étiquette
+  n'a de valeur que si le débriefing la transforme en discussion sur le fond.
+- **L'étiquette est une interprétation, pas un fait.** Pas de classification canonique des
+  sophismes ; l'IA propose la catégorie *dominante*. À présenter comme discutable en classe.
+- **Exposition de l'élève fragile.** L'étiquetage projeté juste après une prise de parole
+  peut faire taire — même sans nom affiché. Protéger la parole ; privilégier le Scénario A.
+- **Le 20 % enseignant est requis** : choix du texte/sujet, reclassement, animation du
+  débriefing. Accepter les étiquettes telles quelles ne produit rien d'utile.
 - **Reconnaissance vocale** : dépend du navigateur (Chrome/Edge OK, Firefox/Safari non
   à ce jour). En classe bruyante ou à plusieurs locuteurs, la transcription est peu
   fiable — la saisie clavier reste le mode de secours et est toujours disponible. Un
