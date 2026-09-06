@@ -36,7 +36,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>ArgumentActif — Projection</title>
 <style>
   :root{color-scheme:dark}
-  body{margin:0;background:#1e293b;color:#f8fafc;font-family:'Inter',system-ui,sans-serif;
+  body{margin:0;background:#1e293b;color:#f8fafc;font-family:Arial,'Helvetica Neue',system-ui,sans-serif;
        min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:2vh 4vw;box-sizing:border-box}
   #bandeau{font-size:1.4vw;line-height:1.4;text-align:center;opacity:.85;max-width:70ch;padding-bottom:1.2vh}
   #sujet{font-size:1.7vw;font-weight:600;text-align:center;max-width:70ch;margin-bottom:3vh;padding-bottom:1.5vh;border-bottom:1px solid #475569}
