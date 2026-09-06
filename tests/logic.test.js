@@ -326,3 +326,18 @@ test('formatExport n\'affiche jamais de verdict vrai/faux (avec texteDepart)', (
   s = L.addUnite(s, L.createUnite({ texteSource: 'x', texte: 'z', categorie: 'affirmation-factuelle', origine: 'texte-depart' }));
   assert.doesNotMatch(L.formatExport(s), /\b(vrai|faux|correct|incorrect|erroné)\b/i);
 });
+
+test('FAMILLES couvre les 10 catégories exactement une fois', () => {
+  const cles = L.FAMILLES.flatMap((f) => f.cles);
+  assert.equal(cles.length, 10);
+  assert.deepEqual([...cles].sort(), [...L.CATEGORIES].sort());
+  for (const f of L.FAMILLES) assert.ok(f.titre && f.cles.length >= 1);
+});
+
+test('SUJETS : 4 thèmes non vides, prompts se terminant par ?', () => {
+  assert.ok(L.SUJETS.length >= 3);
+  for (const g of L.SUJETS) {
+    assert.ok(g.theme && Array.isArray(g.items) && g.items.length >= 1);
+    for (const s of g.items) assert.match(s, /\?\s*$/);
+  }
+});

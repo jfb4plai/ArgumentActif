@@ -72,6 +72,28 @@ Aucun travail du corpus n'évalue empiriquement un outil d'étiquetage en direct
 à la critique d'une sortie d'IA : le dispositif est cohérent avec la recherche, pas
 validé par elle.
 
+## Choix pédagogiques du classement
+
+Les 10 catégories sont regroupées en **3 familles** pour alléger le choix en direct
+(« avare cognitif » — Salès-Wuillemin, *La catégorisation en psychologie sociale*,
+2006, HAL `halshs-00596051`) :
+
+1. **Est-ce un fait ou un avis ?** — affirmation factuelle, opinion
+2. **Le raisonnement tient-il ?** — généralisation abusive, fausse dichotomie, pente
+   glissante, argument d'autorité non sourcé
+3. **On déplace le débat** — appel à l'émotion, homme de paille, ad hominem, question
+   rhétorique
+
+Il n'existe **pas de classification canonique des sophismes** (Plantin, *Dictionnaire
+de l'argumentation*, 2025, DOI 10.13140/RG.2.2.32342.97600 ; Bonnemaison 2022,
+HAL `tel-04578348`) : ce regroupement est un choix didactique assumé. Un bouton
+**« Je ne suis pas sûr·e → à revoir au débriefing »** (= *non classé*) évite de forcer
+une catégorie sous la pression du direct.
+
+La **banque de sujets** propose des *questions socialement vives* (Bastide & Morin,
+*Éducation formelle, éducation non-formelle…*, 2022, HAL `hal-03807719` ; Morin,
+thèse 2013, HAL `tel-00962300`), ancrées dans le contexte FWB.
+
 ## Limites connues
 
 - **Reconnaissance vocale** : dépend du navigateur (Chrome/Edge OK, Firefox/Safari non

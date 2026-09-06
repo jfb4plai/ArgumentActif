@@ -250,24 +250,47 @@
     return li;
   }
 
-  function buildGrille() {
-    const g = $('#grille-categories');
-    g.innerHTML = '';
-    for (const [k, v] of Object.entries(L.TAXONOMY)) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.style.borderColor = v.couleur;
-      b.innerHTML = '<strong>' + v.libelle + '</strong><br><small>' + v.definition + '</small>';
-      b.addEventListener('click', () => {
-        const texte = $('#propos').value.trim();
-        if (!texte) return;
-        addUnitesFromTexts([{ texte, categorie: k }], 'manuel');
-        $('#propos').value = '';
-        $('#choix-manuel').hidden = true;
-        $('#propos').focus();
-      });
-      g.appendChild(b);
+  // grille des 10 catégories regroupées en 3 familles + « pas sûr » (allège le choix en direct)
+  function remplirGrilleFamilles(container, onPick) {
+    container.innerHTML = '';
+    const nonSur = document.createElement('button');
+    nonSur.type = 'button';
+    nonSur.className = 'cat-pas-sur';
+    nonSur.textContent = 'Je ne suis pas sûr·e → à revoir au débriefing';
+    nonSur.addEventListener('click', () => onPick('non-classe'));
+    container.appendChild(nonSur);
+    for (const fam of L.FAMILLES) {
+      const sec = document.createElement('div');
+      sec.className = 'cat-famille';
+      const h = document.createElement('p');
+      h.className = 'cat-famille-titre';
+      h.textContent = fam.titre;
+      sec.appendChild(h);
+      const grid = document.createElement('div');
+      grid.className = 'grille-categories';
+      for (const k of fam.cles) {
+        const v = L.TAXONOMY[k];
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.style.borderColor = v.couleur;
+        b.innerHTML = '<strong>' + v.libelle + '</strong><br><small>' + v.definition + '</small>';
+        b.addEventListener('click', () => onPick(k));
+        grid.appendChild(b);
+      }
+      sec.appendChild(grid);
+      container.appendChild(sec);
     }
+  }
+
+  function buildGrille() {
+    remplirGrilleFamilles($('#grille-categories'), (k) => {
+      const texte = $('#propos').value.trim();
+      if (!texte) return;
+      addUnitesFromTexts([{ texte, categorie: k }], 'manuel');
+      $('#propos').value = '';
+      $('#choix-manuel').hidden = true;
+      $('#propos').focus();
+    });
   }
 
   function addUnitesFromTexts(items, origine) {
@@ -403,22 +426,15 @@
     if (grilleIaBuilt) return;
     const g = $('#grille-categories-ia');
     if (!g) return;
-    for (const [k, v] of Object.entries(L.TAXONOMY)) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.style.borderColor = v.couleur;
-      b.innerHTML = '<strong>' + v.libelle + '</strong><br><small>' + v.definition + '</small>';
-      b.addEventListener('click', () => {
-        const passage = $('#passage-ia').value.trim();
-        if (!passage) return;
-        const u = L.createUnite({ texteSource: state.texteDepart, texte: passage, categorie: k, origine: 'texte-depart' });
-        state = L.addUnite(state, u);
-        saveState();
-        $('#passage-ia').value = '';
-        renderDebriefing();
-      });
-      g.appendChild(b);
-    }
+    remplirGrilleFamilles(g, (k) => {
+      const passage = $('#passage-ia').value.trim();
+      if (!passage) return;
+      const u = L.createUnite({ texteSource: state.texteDepart, texte: passage, categorie: k, origine: 'texte-depart' });
+      state = L.addUnite(state, u);
+      saveState();
+      $('#passage-ia').value = '';
+      renderDebriefing();
+    });
     grilleIaBuilt = true;
   }
 
@@ -540,8 +556,26 @@
     saveState(); majBoutonTexte();
   }
 
+  function remplirSujets() {
+    const sel = $('#sujet-suggere');
+    if (!sel) return;
+    for (const groupe of L.SUJETS) {
+      const og = document.createElement('optgroup');
+      og.label = groupe.theme;
+      for (const s of groupe.items) {
+        const o = document.createElement('option');
+        o.value = s; o.textContent = s; og.appendChild(o);
+      }
+      sel.appendChild(og);
+    }
+    sel.addEventListener('change', () => {
+      if (sel.value) { $('#sujet').value = sel.value; sel.selectedIndex = 0; }
+    });
+  }
+
   function init() {
     buildGrille();
+    remplirSujets();
     renderJournal();
     if (state.sujet) $('#sujet').value = state.sujet;
     if (state.texteDepart) $('#texte-depart').value = state.texteDepart;

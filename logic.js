@@ -104,6 +104,65 @@ const SOCRATIC_BANK = {
 
 const CATEGORIES = Object.keys(TAXONOMY);
 
+// ── Regroupement pédagogique des 10 catégories (allège le choix en direct) ──
+// Choix assumé : aucune classification canonique des sophismes (Plantin 2025 ;
+// Bonnemaison 2022). Logique : où se situe le défaut ?
+const FAMILLES = [
+  {
+    titre: 'Est-ce un fait ou un avis ?',
+    cles: ['affirmation-factuelle', 'opinion'],
+  },
+  {
+    titre: 'Le raisonnement tient-il ?',
+    cles: ['generalisation-abusive', 'fausse-dichotomie', 'pente-glissante', 'autorite-non-sourcee'],
+  },
+  {
+    titre: 'On déplace le débat',
+    cles: ['appel-emotion', 'homme-de-paille', 'ad-hominem', 'question-rhetorique'],
+  },
+];
+
+// ── Banque de sujets (questions socialement vives, ancrage FWB) ───────
+// Bastide & Morin 2022 ; Morin 2013. Prompts de débat neutres, pas des thèses.
+const SUJETS = [
+  {
+    theme: 'Numérique & IA',
+    items: [
+      "Faut-il limiter le temps d'écran des adolescents ?",
+      "L'IA devrait-elle être autorisée pour faire ses devoirs ?",
+      "Les réseaux sociaux devraient-ils vérifier l'âge de leurs utilisateurs ?",
+      "Faut-il interdire les smartphones à l'école secondaire ?",
+    ],
+  },
+  {
+    theme: 'École & évaluation',
+    items: [
+      "Faut-il remplacer les points par une évaluation par compétences ?",
+      "La semaine de 4 jours à l'école : pour ou contre ?",
+      "Le cours de sport devrait-il être coté ?",
+      "Faut-il rendre le bénévolat obligatoire au secondaire ?",
+    ],
+  },
+  {
+    theme: 'Environnement',
+    items: [
+      "Faut-il imposer un quota de produits locaux dans les cantines scolaires ?",
+      "Les transports en commun devraient-ils être gratuits pour les moins de 25 ans ?",
+      "Faut-il taxer davantage les produits très emballés ?",
+      "Les zoos ont-ils encore leur place aujourd'hui ?",
+    ],
+  },
+  {
+    theme: 'Société & citoyenneté',
+    items: [
+      "Faut-il abaisser l'âge du droit de vote à 16 ans ?",
+      "Faut-il interdire la publicité destinée aux enfants ?",
+      "L'uniforme à l'école : bonne ou mauvaise idée ?",
+      "Faut-il installer plus de caméras de surveillance dans l'espace public ?",
+    ],
+  },
+];
+
 // ── ID ───────────────────────────────────────────────────────────────
 function uid() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -367,7 +426,7 @@ function buildClassifyRequest({ mode, apiKey, proxyUrl, texte, sujet }) {
 }
 
 const api = {
-  TAXONOMY, SOCRATIC_BANK, CATEGORIES, CAMPS,
+  TAXONOMY, SOCRATIC_BANK, CATEGORIES, CAMPS, FAMILLES, SUJETS,
   createUnite, clearSeance, addUnite, reclassifyUnite, setCamp, toggleFlag, removeUnite,
   parseModelResponse, formatExport, detectMode, buildClassifyRequest, MAX_TEXTE,
 };

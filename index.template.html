@@ -15,6 +15,10 @@
     fieldset { border:1px solid var(--border,#ddd); border-radius:8px; margin:.5rem 0; }
     .grille-categories { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:.4rem; }
     .grille-categories button { text-align:left; padding:.5rem; border-radius:8px; border:2px solid; background:#fff; cursor:pointer; font-size:.9rem; }
+    .cat-famille { margin:.7rem 0; }
+    .cat-famille-titre { font-weight:700; margin:0 0 .35rem; color:var(--text2,#444); }
+    .cat-pas-sur { display:block; width:100%; text-align:left; padding:.5rem .7rem; margin:.2rem 0 .6rem; border-radius:8px; border:2px dashed var(--border,#bbb); background:#faf9f7; cursor:pointer; font-size:.9rem; color:var(--text2,#555); }
+    .cat-pas-sur:hover { border-color:var(--teal); color:var(--teal); }
     .journal { list-style:none; padding:0; display:flex; flex-direction:column; gap:.5rem; }
     .journal li { border-left:6px solid; padding:.5rem .75rem; background:#fff; border-radius:0 8px 8px 0; }
     .journal .meta { display:flex; gap:.5rem; align-items:center; font-size:.85rem; flex-wrap:wrap; }
@@ -78,6 +82,9 @@
         <label for="sujet">Sujet du débat</label>
         <input id="sujet" class="plai-input" type="text"
                placeholder="Ex. : Faut-il limiter les réseaux sociaux avant 16 ans ?" />
+        <select id="sujet-suggere" class="plai-input" aria-label="Choisir un sujet tout prêt">
+          <option value="">— ou choisis un sujet tout prêt —</option>
+        </select>
         <p class="aide">Ce sujet s'affiche sur la projection vue par la classe.</p>
 
         <details id="options-avancees">
@@ -146,8 +153,8 @@
           <button id="remontrer-texte" class="plai-btn" type="button" hidden>Remontrer le texte de départ</button>
         </div>
         <div id="choix-manuel" hidden>
-          <p>Choisis la catégorie :</p>
-          <div id="grille-categories" class="grille-categories"></div>
+          <p>Choisis la catégorie de cette prise de parole :</p>
+          <div id="grille-categories" class="grille-familles"></div>
         </div>
         <p id="regie-erreur" class="plai-error" role="alert" aria-live="assertive" hidden></p>
       </div>
@@ -191,7 +198,7 @@
       <textarea id="passage-ia" class="plai-input" rows="2"
                 placeholder="Copie ici la phrase du texte de l'IA que la classe veut étiqueter."></textarea>
       <p class="aide">La classe choisit la catégorie d'un clic. L'outil n'analyse jamais ce texte tout seul.</p>
-      <div id="grille-categories-ia" class="grille-categories"></div>
+      <div id="grille-categories-ia" class="grille-familles"></div>
     </div>
 
     <div class="filtres">

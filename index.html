@@ -16,6 +16,10 @@
     fieldset { border:1px solid var(--border,#ddd); border-radius:8px; margin:.5rem 0; }
     .grille-categories { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:.4rem; }
     .grille-categories button { text-align:left; padding:.5rem; border-radius:8px; border:2px solid; background:#fff; cursor:pointer; font-size:.9rem; }
+    .cat-famille { margin:.7rem 0; }
+    .cat-famille-titre { font-weight:700; margin:0 0 .35rem; color:var(--text2,#444); }
+    .cat-pas-sur { display:block; width:100%; text-align:left; padding:.5rem .7rem; margin:.2rem 0 .6rem; border-radius:8px; border:2px dashed var(--border,#bbb); background:#faf9f7; cursor:pointer; font-size:.9rem; color:var(--text2,#555); }
+    .cat-pas-sur:hover { border-color:var(--teal); color:var(--teal); }
     .journal { list-style:none; padding:0; display:flex; flex-direction:column; gap:.5rem; }
     .journal li { border-left:6px solid; padding:.5rem .75rem; background:#fff; border-radius:0 8px 8px 0; }
     .journal .meta { display:flex; gap:.5rem; align-items:center; font-size:.85rem; flex-wrap:wrap; }
@@ -79,6 +83,9 @@
         <label for="sujet">Sujet du débat</label>
         <input id="sujet" class="plai-input" type="text"
                placeholder="Ex. : Faut-il limiter les réseaux sociaux avant 16 ans ?" />
+        <select id="sujet-suggere" class="plai-input" aria-label="Choisir un sujet tout prêt">
+          <option value="">— ou choisis un sujet tout prêt —</option>
+        </select>
         <p class="aide">Ce sujet s'affiche sur la projection vue par la classe.</p>
 
         <details id="options-avancees">
@@ -147,8 +154,8 @@
           <button id="remontrer-texte" class="plai-btn" type="button" hidden>Remontrer le texte de départ</button>
         </div>
         <div id="choix-manuel" hidden>
-          <p>Choisis la catégorie :</p>
-          <div id="grille-categories" class="grille-categories"></div>
+          <p>Choisis la catégorie de cette prise de parole :</p>
+          <div id="grille-categories" class="grille-familles"></div>
         </div>
         <p id="regie-erreur" class="plai-error" role="alert" aria-live="assertive" hidden></p>
       </div>
@@ -192,7 +199,7 @@
       <textarea id="passage-ia" class="plai-input" rows="2"
                 placeholder="Copie ici la phrase du texte de l'IA que la classe veut étiqueter."></textarea>
       <p class="aide">La classe choisit la catégorie d'un clic. L'outil n'analyse jamais ce texte tout seul.</p>
-      <div id="grille-categories-ia" class="grille-categories"></div>
+      <div id="grille-categories-ia" class="grille-familles"></div>
     </div>
 
     <div class="filtres">
@@ -321,6 +328,65 @@ const SOCRATIC_BANK = {
 };
 
 const CATEGORIES = Object.keys(TAXONOMY);
+
+// ── Regroupement pédagogique des 10 catégories (allège le choix en direct) ──
+// Choix assumé : aucune classification canonique des sophismes (Plantin 2025 ;
+// Bonnemaison 2022). Logique : où se situe le défaut ?
+const FAMILLES = [
+  {
+    titre: 'Est-ce un fait ou un avis ?',
+    cles: ['affirmation-factuelle', 'opinion'],
+  },
+  {
+    titre: 'Le raisonnement tient-il ?',
+    cles: ['generalisation-abusive', 'fausse-dichotomie', 'pente-glissante', 'autorite-non-sourcee'],
+  },
+  {
+    titre: 'On déplace le débat',
+    cles: ['appel-emotion', 'homme-de-paille', 'ad-hominem', 'question-rhetorique'],
+  },
+];
+
+// ── Banque de sujets (questions socialement vives, ancrage FWB) ───────
+// Bastide & Morin 2022 ; Morin 2013. Prompts de débat neutres, pas des thèses.
+const SUJETS = [
+  {
+    theme: 'Numérique & IA',
+    items: [
+      "Faut-il limiter le temps d'écran des adolescents ?",
+      "L'IA devrait-elle être autorisée pour faire ses devoirs ?",
+      "Les réseaux sociaux devraient-ils vérifier l'âge de leurs utilisateurs ?",
+      "Faut-il interdire les smartphones à l'école secondaire ?",
+    ],
+  },
+  {
+    theme: 'École & évaluation',
+    items: [
+      "Faut-il remplacer les points par une évaluation par compétences ?",
+      "La semaine de 4 jours à l'école : pour ou contre ?",
+      "Le cours de sport devrait-il être coté ?",
+      "Faut-il rendre le bénévolat obligatoire au secondaire ?",
+    ],
+  },
+  {
+    theme: 'Environnement',
+    items: [
+      "Faut-il imposer un quota de produits locaux dans les cantines scolaires ?",
+      "Les transports en commun devraient-ils être gratuits pour les moins de 25 ans ?",
+      "Faut-il taxer davantage les produits très emballés ?",
+      "Les zoos ont-ils encore leur place aujourd'hui ?",
+    ],
+  },
+  {
+    theme: 'Société & citoyenneté',
+    items: [
+      "Faut-il abaisser l'âge du droit de vote à 16 ans ?",
+      "Faut-il interdire la publicité destinée aux enfants ?",
+      "L'uniforme à l'école : bonne ou mauvaise idée ?",
+      "Faut-il installer plus de caméras de surveillance dans l'espace public ?",
+    ],
+  },
+];
 
 // ── ID ───────────────────────────────────────────────────────────────
 function uid() {
@@ -585,7 +651,7 @@ function buildClassifyRequest({ mode, apiKey, proxyUrl, texte, sujet }) {
 }
 
 const api = {
-  TAXONOMY, SOCRATIC_BANK, CATEGORIES, CAMPS,
+  TAXONOMY, SOCRATIC_BANK, CATEGORIES, CAMPS, FAMILLES, SUJETS,
   createUnite, clearSeance, addUnite, reclassifyUnite, setCamp, toggleFlag, removeUnite,
   parseModelResponse, formatExport, detectMode, buildClassifyRequest, MAX_TEXTE,
 };
@@ -848,24 +914,47 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     return li;
   }
 
-  function buildGrille() {
-    const g = $('#grille-categories');
-    g.innerHTML = '';
-    for (const [k, v] of Object.entries(L.TAXONOMY)) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.style.borderColor = v.couleur;
-      b.innerHTML = '<strong>' + v.libelle + '</strong><br><small>' + v.definition + '</small>';
-      b.addEventListener('click', () => {
-        const texte = $('#propos').value.trim();
-        if (!texte) return;
-        addUnitesFromTexts([{ texte, categorie: k }], 'manuel');
-        $('#propos').value = '';
-        $('#choix-manuel').hidden = true;
-        $('#propos').focus();
-      });
-      g.appendChild(b);
+  // grille des 10 catégories regroupées en 3 familles + « pas sûr » (allège le choix en direct)
+  function remplirGrilleFamilles(container, onPick) {
+    container.innerHTML = '';
+    const nonSur = document.createElement('button');
+    nonSur.type = 'button';
+    nonSur.className = 'cat-pas-sur';
+    nonSur.textContent = 'Je ne suis pas sûr·e → à revoir au débriefing';
+    nonSur.addEventListener('click', () => onPick('non-classe'));
+    container.appendChild(nonSur);
+    for (const fam of L.FAMILLES) {
+      const sec = document.createElement('div');
+      sec.className = 'cat-famille';
+      const h = document.createElement('p');
+      h.className = 'cat-famille-titre';
+      h.textContent = fam.titre;
+      sec.appendChild(h);
+      const grid = document.createElement('div');
+      grid.className = 'grille-categories';
+      for (const k of fam.cles) {
+        const v = L.TAXONOMY[k];
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.style.borderColor = v.couleur;
+        b.innerHTML = '<strong>' + v.libelle + '</strong><br><small>' + v.definition + '</small>';
+        b.addEventListener('click', () => onPick(k));
+        grid.appendChild(b);
+      }
+      sec.appendChild(grid);
+      container.appendChild(sec);
     }
+  }
+
+  function buildGrille() {
+    remplirGrilleFamilles($('#grille-categories'), (k) => {
+      const texte = $('#propos').value.trim();
+      if (!texte) return;
+      addUnitesFromTexts([{ texte, categorie: k }], 'manuel');
+      $('#propos').value = '';
+      $('#choix-manuel').hidden = true;
+      $('#propos').focus();
+    });
   }
 
   function addUnitesFromTexts(items, origine) {
@@ -1001,22 +1090,15 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     if (grilleIaBuilt) return;
     const g = $('#grille-categories-ia');
     if (!g) return;
-    for (const [k, v] of Object.entries(L.TAXONOMY)) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.style.borderColor = v.couleur;
-      b.innerHTML = '<strong>' + v.libelle + '</strong><br><small>' + v.definition + '</small>';
-      b.addEventListener('click', () => {
-        const passage = $('#passage-ia').value.trim();
-        if (!passage) return;
-        const u = L.createUnite({ texteSource: state.texteDepart, texte: passage, categorie: k, origine: 'texte-depart' });
-        state = L.addUnite(state, u);
-        saveState();
-        $('#passage-ia').value = '';
-        renderDebriefing();
-      });
-      g.appendChild(b);
-    }
+    remplirGrilleFamilles(g, (k) => {
+      const passage = $('#passage-ia').value.trim();
+      if (!passage) return;
+      const u = L.createUnite({ texteSource: state.texteDepart, texte: passage, categorie: k, origine: 'texte-depart' });
+      state = L.addUnite(state, u);
+      saveState();
+      $('#passage-ia').value = '';
+      renderDebriefing();
+    });
     grilleIaBuilt = true;
   }
 
@@ -1138,8 +1220,26 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
     saveState(); majBoutonTexte();
   }
 
+  function remplirSujets() {
+    const sel = $('#sujet-suggere');
+    if (!sel) return;
+    for (const groupe of L.SUJETS) {
+      const og = document.createElement('optgroup');
+      og.label = groupe.theme;
+      for (const s of groupe.items) {
+        const o = document.createElement('option');
+        o.value = s; o.textContent = s; og.appendChild(o);
+      }
+      sel.appendChild(og);
+    }
+    sel.addEventListener('change', () => {
+      if (sel.value) { $('#sujet').value = sel.value; sel.selectedIndex = 0; }
+    });
+  }
+
   function init() {
     buildGrille();
+    remplirSujets();
     renderJournal();
     if (state.sujet) $('#sujet').value = state.sujet;
     if (state.texteDepart) $('#texte-depart').value = state.texteDepart;
