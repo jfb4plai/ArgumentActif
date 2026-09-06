@@ -231,3 +231,23 @@ test('buildClassifyRequest mode manuel: jette une erreur (aucun appel réseau at
 test('buildClassifyRequest exige un texte non vide', () => {
   assert.throws(() => L.buildClassifyRequest({ mode: 'cle', apiKey: 'k', texte: '   ' }), /texte/i);
 });
+
+test('removeUnite retire l\'unité ciblée sans muter l\'ancien état', () => {
+  let s = L.clearSeance({ sujet: 's' });
+  const u1 = L.createUnite({ texteSource: 'a', texte: 'a', categorie: 'opinion', origine: 'ia' });
+  const u2 = L.createUnite({ texteSource: 'b', texte: 'b', categorie: 'opinion', origine: 'ia' });
+  s = L.addUnite(L.addUnite(s, u1), u2);
+  const s2 = L.removeUnite(s, u1.id);
+  assert.equal(s.unites.length, 2);
+  assert.equal(s2.unites.length, 1);
+  assert.equal(s2.unites[0].id, u2.id);
+});
+
+test('buildClassifyRequest tronque un texte trop long à MAX_TEXTE', () => {
+  const long = 'x'.repeat(L.MAX_TEXTE + 500);
+  const r = L.buildClassifyRequest({ mode: 'cle', apiKey: 'k', texte: long, sujet: 's' });
+  const b = JSON.parse(r.body);
+  const passage = b.messages[0].content;
+  // le passage inséré ne contient pas plus de MAX_TEXTE 'x'
+  assert.ok((passage.match(/x/g) || []).length <= L.MAX_TEXTE);
+});

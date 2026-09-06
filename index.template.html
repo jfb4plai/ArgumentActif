@@ -20,6 +20,9 @@
     .journal .meta { display:flex; gap:.5rem; align-items:center; font-size:.85rem; flex-wrap:wrap; }
     .journal select { font-size:.85rem; }
     .journal .flag[aria-pressed="true"] { background:var(--orange); color:#fff; }
+    .journal .meta button { font-size:.8rem; padding:.15rem .5rem; }
+    .journal .retirer { background:transparent; border:1px solid var(--border,#ccc); color:var(--text3,#888); }
+    .journal .retirer:hover { background:#b3261e; color:#fff; border-color:#b3261e; }
     .pied-actions,.saisie-actions,.saisie-tools { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin:.5rem 0; }
     .plai-btn.danger { background:#b3261e; color:#fff; }
     .debrief { width:100%; border-collapse:collapse; }
@@ -90,7 +93,7 @@
           <p>Choisis la catégorie :</p>
           <div id="grille-categories" class="grille-categories"></div>
         </div>
-        <p id="regie-erreur" class="plai-error" hidden></p>
+        <p id="regie-erreur" class="plai-error" role="alert" aria-live="assertive" hidden></p>
       </div>
 
       <h2>Journal de séance</h2>

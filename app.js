@@ -63,7 +63,7 @@
     c.innerHTML =
       '<div class="pastille"><span class="dot" style="background:'+t.couleur+'"></span>'+t.libelle+'</div>'+
       '<div class="texte">« '+esc(last.texte)+' »</div>'+
-      (last.camp ? '<div class="camp">position : '+last.camp+'</div>' : '')+
+      (last.camp ? '<div class="camp">position : '+esc(last.camp)+'</div>' : '')+
       (last.aVerifier ? '<div class="verif">⚑ à vérifier par la classe</div>' : '');
     h.innerHTML = us.slice(-4,-1).reverse().map(function(u){
       var tt = u.categorie==='non-classe'?'Non classé':TAX[u.categorie].libelle;
@@ -73,7 +73,11 @@
   function esc(s){ return String(s).replace(/[&<>]/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[m];}); }
   const ch = ('BroadcastChannel' in window) ? new BroadcastChannel('argumentactif') : null;
   if (ch) ch.onmessage = function(e){ if (e.data && e.data.type==='state') render(e.data.state); };
-  window.addEventListener('message', function(e){ if (e.data && e.data.type==='state') render(e.data.state); });
+  // n'accepte l'état que de la fenêtre qui a ouvert la projection
+  window.addEventListener('message', function(e){
+    if (e.source && e.source !== window.opener) return;
+    if (e.data && e.data.type==='state') render(e.data.state);
+  });
   try { render(JSON.parse(sessionStorage.getItem('argumentactif.seance'))); } catch(_) {}
   if (window.opener) window.opener.postMessage({type:'projection-ready'}, '*');
 </script></body></html>`;
@@ -82,6 +86,9 @@
   function ouvrirProjection() {
     const blob = new Blob([PROJECTION_HTML], { type: 'text/html' });
     projectionWin = window.open(URL.createObjectURL(blob), 'argumentactif-projection', 'width=1280,height=720');
+    if (!projectionWin) {
+      alert('La fenêtre de projection a été bloquée par le navigateur. Autorise les pop-ups pour ce site, puis réessaie.');
+    }
   }
   function pushToProjection() {
     if (projectionWin && !projectionWin.closed) projectionWin.postMessage({ type: 'state', state }, '*');
@@ -108,6 +115,7 @@
     meta.className = 'meta';
 
     const selCat = document.createElement('select');
+    selCat.setAttribute('aria-label', 'Catégorie de l’unité');
     for (const [k, v] of Object.entries(L.TAXONOMY)) {
       const o = document.createElement('option');
       o.value = k; o.textContent = v.libelle; selCat.appendChild(o);
@@ -122,6 +130,7 @@
     });
 
     const selCamp = document.createElement('select');
+    selCamp.setAttribute('aria-label', 'Camp (position dans le débat, jamais un élève)');
     for (const [val, lab] of [['', '—'], ['pour', 'Pour'], ['contre', 'Contre'], ['autre', 'Autre']]) {
       const o = document.createElement('option'); o.value = val; o.textContent = lab; selCamp.appendChild(o);
     }
@@ -142,7 +151,17 @@
     const heure = document.createElement('span');
     heure.textContent = (u.timestamp || '').slice(11, 16);
 
-    meta.append(heure, selCat, selCamp, flag);
+    const retirer = document.createElement('button');
+    retirer.className = 'retirer plai-btn';
+    retirer.type = 'button';
+    retirer.textContent = '✕';
+    retirer.title = 'Retirer cette unité (mauvais clic, doublon…)';
+    retirer.setAttribute('aria-label', 'Retirer cette unité');
+    retirer.addEventListener('click', () => {
+      state = L.removeUnite(state, u.id); saveState(); renderJournal();
+    });
+
+    meta.append(heure, selCat, selCamp, flag, retirer);
     if (u.editee) { const e = document.createElement('span'); e.textContent = '✎'; meta.appendChild(e); }
 
     const texte = document.createElement('div');
@@ -190,23 +209,33 @@
     if (!texte) return;
     if (config.mode === 'manuel') { $('#choix-manuel').hidden = false; return; }
     $('#classer').disabled = true;
+    const ctrl = new AbortController();
+    const minuteur = setTimeout(() => ctrl.abort(), 20000);
     try {
       const req = L.buildClassifyRequest({ ...config, texte, sujet: state.sujet });
-      const r = await fetch(req.url, { method: 'POST', headers: req.headers, body: req.body });
+      const r = await fetch(req.url, { method: 'POST', headers: req.headers, body: req.body, signal: ctrl.signal });
       const data = await r.json();
       if (!r.ok) throw new Error('Le modèle a renvoyé une erreur.');
       // Le proxy relaie l'enveloppe Anthropic brute, comme le mode clé :
       // dans les deux cas le JSON du modèle est dans content[0].text.
       const payload = (data && data.content && data.content[0] && data.content[0].text) || data;
       const unites = L.parseModelResponse(payload);
+      if (!unites.length) {
+        err.textContent = 'Le modèle n\'a rien classé dans ce passage. Reformule, ou clique « Ajouter manuellement… ».';
+        err.hidden = false;
+        $('#choix-manuel').hidden = false;
+        return; // on garde le texte saisi
+      }
       addUnitesFromTexts(unites, 'ia');
       $('#propos').value = '';
     } catch (e) {
-      err.textContent = 'Classification automatique indisponible (' + (e.message || e) +
-        '). Passe en mode manuel : clique « Ajouter manuellement… ».';
+      const msg = e.name === 'AbortError' ? 'délai dépassé (20 s)' : (e.message || e);
+      err.textContent = 'Classification automatique indisponible (' + msg +
+        '). Ton texte est conservé. Passe en mode manuel : clique « Ajouter manuellement… ».';
       err.hidden = false;
       $('#choix-manuel').hidden = false;
     } finally {
+      clearTimeout(minuteur);
       $('#classer').disabled = false;
     }
   }
@@ -226,6 +255,8 @@
     config.proxyUrl = $('#proxyUrl').value.trim();
     config.apiKey = $('#apiKey').value.trim();
     if (config.mode !== 'manuel' && L.detectMode(config) === 'manuel') config.mode = 'manuel';
+    // la clé ne reste pas dans le DOM : elle vit seulement dans `config` (mémoire de session)
+    $('#apiKey').value = '';
     $('#config').open = false;
     $('#pendant').hidden = false;
     $('#mode-actif').textContent = 'Mode actif : ' + config.mode;
@@ -268,7 +299,7 @@
         `<td>${(u.timestamp || '').slice(11, 16)}</td>` +
         `<td>« ${escapeHtml(u.texte)} »</td>` +
         `<td class="etiquette-cell" style="border-left:6px solid ${cat ? cat.couleur : '#999'}">${cat ? cat.libelle : 'Non classé'}${u.aVerifier ? ' ⚑' : ''}</td>` +
-        `<td>${u.camp || '—'}</td>` +
+        `<td>${escapeHtml(u.camp || '—')}</td>` +
         `<td>${pistes}</td>`;
       corps.appendChild(tr);
     }

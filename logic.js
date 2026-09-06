@@ -162,6 +162,10 @@ function toggleFlag(state, id) {
   return mapUnite(state, id, (u) => ({ ...u, aVerifier: !u.aVerifier }));
 }
 
+function removeUnite(state, id) {
+  return { ...state, unites: state.unites.filter((u) => u.id !== id) };
+}
+
 function parseModelResponse(raw) {
   let obj = raw;
   if (typeof raw === 'string') {
@@ -271,8 +275,10 @@ const RESPONSE_SCHEMA = {
   additionalProperties: false,
 };
 
+const MAX_TEXTE = 2000; // borne anti-coût : un passage de débat dépasse rarement 300 mots
+
 function buildClassifyRequest({ mode, apiKey, proxyUrl, texte, sujet }) {
-  const t = String(texte || '').trim();
+  const t = String(texte || '').trim().slice(0, MAX_TEXTE);
   if (!t) throw new Error('Le texte à classer est vide.');
   if (mode === 'manuel') throw new Error('Mode manuel : aucun appel réseau.');
 
@@ -314,8 +320,8 @@ function buildClassifyRequest({ mode, apiKey, proxyUrl, texte, sujet }) {
 
 const api = {
   TAXONOMY, SOCRATIC_BANK, CATEGORIES, CAMPS,
-  createUnite, clearSeance, addUnite, reclassifyUnite, setCamp, toggleFlag,
-  parseModelResponse, formatExport, detectMode, buildClassifyRequest,
+  createUnite, clearSeance, addUnite, reclassifyUnite, setCamp, toggleFlag, removeUnite,
+  parseModelResponse, formatExport, detectMode, buildClassifyRequest, MAX_TEXTE,
 };
 
 // Double export : Node (tests) + navigateur (app.js via <script>).
