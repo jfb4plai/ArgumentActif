@@ -111,7 +111,7 @@ function uid() {
 }
 
 // ── Unité ────────────────────────────────────────────────────────────
-const CAMPS = ['pour', 'contre', 'autre'];
+const CAMPS = ['pour', 'contre'];
 
 function assertCategorie(cat) {
   if (cat !== 'non-classe' && !TAXONOMY[cat]) {

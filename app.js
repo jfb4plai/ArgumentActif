@@ -176,7 +176,7 @@
 
     const selCamp = document.createElement('select');
     selCamp.setAttribute('aria-label', 'Camp (position dans le débat, jamais un élève)');
-    for (const [val, lab] of [['', '—'], ['pour', 'Pour'], ['contre', 'Contre'], ['autre', 'Autre']]) {
+    for (const [val, lab] of [['', '—'], ['pour', 'Pour'], ['contre', 'Contre']]) {
       const o = document.createElement('option'); o.value = val; o.textContent = lab; selCamp.appendChild(o);
     }
     selCamp.value = u.camp || '';

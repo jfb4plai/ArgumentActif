@@ -80,15 +80,22 @@ test('reclassifyUnite change la catégorie et marque editee=true', () => {
   assert.equal(s.unites[0].editee, true);
 });
 
-test('setCamp accepte pour/contre/autre/null et rejette le reste', () => {
+test('setCamp accepte pour/contre/null et rejette le reste (dont autre)', () => {
   let s = L.clearSeance({ sujet: 's' });
   const u = L.createUnite({ texteSource: 'a', texte: 'a', categorie: 'opinion', origine: 'ia' });
   s = L.addUnite(s, u);
   s = L.setCamp(s, u.id, 'contre');
   assert.equal(s.unites[0].camp, 'contre');
+  s = L.setCamp(s, u.id, 'pour');
+  assert.equal(s.unites[0].camp, 'pour');
   s = L.setCamp(s, u.id, null);
   assert.equal(s.unites[0].camp, null);
+  assert.throws(() => L.setCamp(s, u.id, 'autre'), /camp/i);
   assert.throws(() => L.setCamp(s, u.id, 'Kevin'), /camp/i);
+});
+
+test('CAMPS = pour, contre', () => {
+  assert.deepEqual(L.CAMPS, ['pour', 'contre']);
 });
 
 test('toggleFlag bascule aVerifier sans aucun autre effet', () => {

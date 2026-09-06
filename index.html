@@ -115,8 +115,7 @@
             Camp :
             <label><input type="radio" name="camp" value="pour" /> Pour</label>
             <label><input type="radio" name="camp" value="contre" /> Contre</label>
-            <label><input type="radio" name="camp" value="autre" /> Autre</label>
-            <label><input type="radio" name="camp" value="" checked /> —</label>
+            <label><input type="radio" name="camp" value="" checked /> — <span class="aide">(pas de camp)</span></label>
           </span>
         </div>
         <label for="propos">Propos entendu (corrige avant de classer)</label>
@@ -166,7 +165,7 @@
 
     <div class="filtres">
       <label>Catégorie <select id="f-categorie"><option value="">toutes</option></select></label>
-      <label>Camp <select id="f-camp"><option value="">tous</option><option value="pour">Pour</option><option value="contre">Contre</option><option value="autre">Autre</option></select></label>
+      <label>Camp <select id="f-camp"><option value="">tous</option><option value="pour">Pour</option><option value="contre">Contre</option></select></label>
       <label><input type="checkbox" id="masquer-etiquettes" /> Masquer les étiquettes (les élèves proposent)</label>
     </div>
     <table class="debrief">
@@ -297,7 +296,7 @@ function uid() {
 }
 
 // ── Unité ────────────────────────────────────────────────────────────
-const CAMPS = ['pour', 'contre', 'autre'];
+const CAMPS = ['pour', 'contre'];
 
 function assertCategorie(cat) {
   if (cat !== 'non-classe' && !TAXONOMY[cat]) {
@@ -742,7 +741,7 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
 
     const selCamp = document.createElement('select');
     selCamp.setAttribute('aria-label', 'Camp (position dans le débat, jamais un élève)');
-    for (const [val, lab] of [['', '—'], ['pour', 'Pour'], ['contre', 'Contre'], ['autre', 'Autre']]) {
+    for (const [val, lab] of [['', '—'], ['pour', 'Pour'], ['contre', 'Contre']]) {
       const o = document.createElement('option'); o.value = val; o.textContent = lab; selCamp.appendChild(o);
     }
     selCamp.value = u.camp || '';
