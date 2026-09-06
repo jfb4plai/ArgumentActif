@@ -31,6 +31,11 @@
     .texte-depart-contenu { white-space:pre-wrap; font-family:inherit; margin:0; max-height:30vh; overflow:auto; background:#f4f2ee; padding:.6rem; border-radius:8px; }
     .debrief .section-titre th { background:var(--surface2,#f0ede8); font-weight:700; }
     .debrief tbody:empty { display:none; }
+    #options-avancees { margin:.6rem 0; border:1px solid var(--border,#ddd); border-radius:8px; }
+    #options-avancees > summary { padding:.5rem .75rem; cursor:pointer; font-weight:600; color:var(--text2,#555); }
+    #options-avancees .options-bloc { padding:0 .75rem .5rem; }
+    .options-groupe { font-weight:600; margin:.8rem 0 .3rem; }
+    .reco { color:var(--teal); font-weight:400; }
   </style>
 </head>
 <body>
@@ -51,32 +56,39 @@
       <div class="plai-card">
         <label for="sujet">Sujet du débat</label>
         <input id="sujet" class="plai-input" type="text"
-               placeholder="Ex. : Faut-il interdire les téléphones portables au collège ?" />
+               placeholder="Ex. : Faut-il limiter les réseaux sociaux avant 16 ans ?" />
         <p class="aide">Ce sujet s'affiche sur la projection vue par la classe. Il cadre aussi la classification (le modèle sait de quoi on parle).</p>
 
-        <label for="texte-depart">Texte de départ — la réponse d'IA à critiquer (optionnel)</label>
-        <textarea id="texte-depart" class="plai-input" rows="5"
-                  placeholder="Colle ici la réponse produite par une IA (ChatGPT, Claude, Gemini…)."></textarea>
-        <p class="aide">L'outil ne l'analyse <strong>jamais</strong> à ta place : elle sert de matière au débat des élèves. Laisse vide pour un débat classique.</p>
+        <details id="options-avancees">
+          <summary>Options</summary>
+          <div class="options-bloc">
+            <p class="options-groupe">Faire critiquer une réponse d'IA</p>
+            <label for="texte-depart">Texte de départ (optionnel)</label>
+            <textarea id="texte-depart" class="plai-input" rows="5"
+                      placeholder="Colle ici la réponse produite par une IA (ChatGPT, Claude, Gemini…)."></textarea>
+            <p class="aide">L'outil ne l'analyse <strong>jamais</strong> à ta place : elle sert de matière au débat des élèves. Laisse vide pour un débat classique.</p>
 
-        <label for="source-ia">Provenance (optionnel)</label>
-        <input id="source-ia" class="plai-input" type="text"
-               placeholder="Ex. : ChatGPT — prompt « Les OGM sont-ils dangereux ? »" />
-        <p class="aide">Affichée en rappel sur la projection. Nommer l'IA et le prompt aide les élèves à situer le texte.</p>
+            <label for="source-ia">Provenance (optionnel)</label>
+            <input id="source-ia" class="plai-input" type="text"
+                   placeholder="Ex. : ChatGPT — prompt « Les OGM sont-ils dangereux ? »" />
+            <p class="aide">Affichée en rappel sur la projection. Nommer l'IA et le prompt aide les élèves à situer le texte.</p>
 
-        <fieldset>
-          <legend>Accès au modèle</legend>
-          <label><input type="radio" name="mode" value="proxy" /> Proxy (clé cachée côté serveur)</label>
-          <input id="proxyUrl" class="plai-input" type="url" placeholder="https://argumentactif.jfb4plai.com/api/classify" />
-          <p class="aide">Si tu as déployé le proxy : colle son URL. Aucune clé ne transite par le navigateur.</p>
+            <fieldset>
+              <legend>Comment classer les prises de parole ?</legend>
+              <label><input type="radio" name="mode" value="manuel" checked /> Je classe moi-même <span class="reco">— recommandé pour commencer</span></label>
+              <p class="aide">Aucune connexion. Tu choisis la catégorie de chaque prise de parole d'un clic.</p>
 
-          <label><input type="radio" name="mode" value="cle" /> Clé personnelle</label>
-          <input id="apiKey" class="plai-input" type="password" placeholder="sk-ant-…" autocomplete="off" />
-          <p class="aide">La clé reste en mémoire de la session (onglet en cours). Elle n'est jamais enregistrée ni envoyée ailleurs qu'à l'API Anthropic.</p>
+              <label><input type="radio" name="mode" value="cle" /> L'IA me propose, je valide</label>
+              <input id="apiKey" class="plai-input" type="password" placeholder="Coller ma clé Anthropic (sk-ant-…)" autocomplete="off" />
+              <p class="aide">L'IA découpe le propos et propose une catégorie ; tu valides avant l'affichage. La clé reste dans cet onglet, rien n'est enregistré. Obtenir une clé : console.anthropic.com</p>
 
-          <label><input type="radio" name="mode" value="manuel" checked /> Manuel / hors ligne</label>
-          <p class="aide">Aucune connexion au modèle. Tu segmentes toi-même (une ligne = une unité) et tu choisis la catégorie d'un clic.</p>
-        </fieldset>
+              <label><input type="radio" name="mode" value="proxy" /> Via un proxy déployé <span class="reco">— avancé</span></label>
+              <input id="proxyUrl" class="plai-input" type="url" placeholder="URL du proxy (https://…/api/classify)" />
+              <p class="aide">Si l'école a déployé le proxy PLAI. Aucune clé ne transite par le navigateur.</p>
+            </fieldset>
+          </div>
+        </details>
+
         <button id="demarrer" class="plai-btn">Démarrer le débat</button>
       </div>
     </details>

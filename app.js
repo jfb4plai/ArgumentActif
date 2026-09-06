@@ -481,6 +481,8 @@
     if (state.texteDepart || state.unites.length) {
       $('#config').open = false;
       $('#pendant').hidden = false;
+      // séance reprise : ré-ouvrir les options pour re-choisir le mode / revoir le texte
+      if ($('#options-avancees')) $('#options-avancees').open = true;
     }
     if (state.unites.length) {
       // Le mode d'accès n'est jamais persisté (clé en mémoire de session only).
