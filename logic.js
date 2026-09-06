@@ -136,8 +136,15 @@ function createUnite({ texteSource, texte, categorie, origine }) {
 }
 
 // ── État de séance (immutable) ───────────────────────────────────────
-function clearSeance({ sujet }) {
-  return { sujet: String(sujet || ''), unites: [], creeLe: new Date().toISOString() };
+function clearSeance({ sujet, texteDepart, sourceIA } = {}) {
+  return {
+    sujet: String(sujet || ''),
+    texteDepart: String(texteDepart || ''),
+    sourceIA: String(sourceIA || ''),
+    phase: 'debat',
+    unites: [],
+    creeLe: new Date().toISOString(),
+  };
 }
 
 function addUnite(state, unite) {

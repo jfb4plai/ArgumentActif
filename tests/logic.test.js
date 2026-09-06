@@ -251,3 +251,23 @@ test('buildClassifyRequest tronque un texte trop long à MAX_TEXTE', () => {
   // le passage inséré ne contient pas plus de MAX_TEXTE 'x'
   assert.ok((passage.match(/x/g) || []).length <= L.MAX_TEXTE);
 });
+
+test('clearSeance initialise texteDepart, sourceIA à vide et phase à debat', () => {
+  const s = L.clearSeance({ sujet: 'S' });
+  assert.equal(s.texteDepart, '');
+  assert.equal(s.sourceIA, '');
+  assert.equal(s.phase, 'debat');
+});
+
+test('clearSeance normalise texteDepart et sourceIA fournis', () => {
+  const s = L.clearSeance({ sujet: 'S', texteDepart: 'Réponse de l\'IA…', sourceIA: 'ChatGPT' });
+  assert.equal(s.texteDepart, 'Réponse de l\'IA…');
+  assert.equal(s.sourceIA, 'ChatGPT');
+  assert.equal(s.phase, 'debat');
+});
+
+test('clearSeance : texteDepart/sourceIA non-string deviennent vide', () => {
+  const s = L.clearSeance({ sujet: 'S', texteDepart: null, sourceIA: undefined });
+  assert.equal(s.texteDepart, '');
+  assert.equal(s.sourceIA, '');
+});
