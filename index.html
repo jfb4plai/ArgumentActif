@@ -588,9 +588,16 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
   #legende span{display:inline-flex;align-items:center;gap:.4em}
   #legende i{width:.9em;height:.9em;border-radius:2px;display:inline-block}
   #vide{opacity:.5;font-size:1.6vw}
+  #provenance{font-size:1.1vw;opacity:.7;text-align:center;margin-bottom:2vh}
+  #lecture{flex:1;width:100%;max-width:80ch;overflow:auto;white-space:pre-wrap;font-size:1.5vw;line-height:1.5;background:#0f172a;border-radius:.6em;padding:2vh 2.5vw;box-sizing:border-box}
+  #rappel-texte{font-size:1vw;opacity:.6;text-align:center;margin-bottom:1.5vh}
+  [hidden]{display:none!important}
 </style></head><body>
 <div id="bandeau">Cet outil repère un type de mouvement de discours. Il ne juge ni la personne qui parle, ni la vérité de ce qui est dit.</div>
 <div id="sujet"></div>
+<div id="provenance"></div>
+<div id="rappel-texte"></div>
+<div id="lecture" hidden></div>
 <div id="courante"><div id="vide">En attente du premier propos…</div></div>
 <div id="historique"></div>
 <div id="legende"></div>
@@ -599,10 +606,30 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
   const leg = document.getElementById('legende');
   for (const k in TAX){ const s=document.createElement('span'); s.innerHTML='<i style="background:'+TAX[k].couleur+'"></i>'+TAX[k].libelle; leg.appendChild(s); }
   function render(state){
-    const c = document.getElementById('courante'); const h = document.getElementById('historique');
+    const c = document.getElementById('courante');
+    const h = document.getElementById('historique');
     const sujetEl = document.getElementById('sujet');
+    const provEl = document.getElementById('provenance');
+    const rappelEl = document.getElementById('rappel-texte');
+    const lectureEl = document.getElementById('lecture');
+    const legendeEl = document.getElementById('legende');
     sujetEl.textContent = (state && state.sujet) ? 'Débat : ' + state.sujet : '';
-    const us = (state && state.unites) || [];
+    const aTexte = !!(state && state.texteDepart);
+    const enLecture = aTexte && state.phase === 'lecture';
+
+    if (enLecture){
+      provEl.textContent = state.sourceIA ? 'Texte proposé par : ' + state.sourceIA : '';
+      lectureEl.textContent = state.texteDepart;
+      lectureEl.hidden = false;
+      rappelEl.textContent = '';
+      c.hidden = true; h.hidden = true; legendeEl.hidden = true;
+      return;
+    }
+    lectureEl.hidden = true; provEl.textContent = '';
+    c.hidden = false; h.hidden = false; legendeEl.hidden = false;
+    rappelEl.textContent = aTexte ? ('Texte de départ : ' + (state.sourceIA || 'réponse d\\'IA')) : '';
+
+    const us = ((state && state.unites) || []).filter(function(u){ return u.origine !== 'texte-depart'; });
     if (!us.length){ c.innerHTML='<div id="vide">En attente du premier propos…</div>'; h.innerHTML=''; return; }
     const last = us[us.length-1];
     const t = last.categorie==='non-classe' ? {libelle:'Non classé',couleur:'#94a3b8'} : TAX[last.categorie];
