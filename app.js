@@ -138,11 +138,15 @@
     }
     if (ligne) {
       if (!$('#pendant') || $('#pendant').hidden) { ligne.hidden = true; return; }
+      const enRetard = !ok && state.unites.some((u) => u.origine !== 'texte-depart'); // des étiquettes existent mais rien n'est projeté
       ligne.hidden = false;
       ligne.textContent = ok
-        ? 'Projection : ● ouverte.'
-        : 'Projection : ○ fermée — clique « Projection ↗ » en haut pour l’ouvrir (ou la rouvrir).';
-      ligne.classList.toggle('statut-off', !ok);
+        ? 'Projection : ● ouverte — les étiquettes s’affichent pour la classe.'
+        : (enRetard
+          ? '⚠ Des étiquettes ne sont pas projetées : clique « Projection ↗ » en haut.'
+          : 'Projection pas encore ouverte — clique « Projection ↗ » en haut avant de commencer.');
+      ligne.classList.toggle('statut-on', ok);
+      ligne.classList.toggle('statut-off', enRetard);
     }
   }
   setInterval(majProjectionStatut, 2500); // détecte si l'enseignant a fermé la fenêtre
@@ -166,6 +170,9 @@
     if (rappel) rappel.hidden = n === 0;
     const compte = $('#journal-compte');
     if (compte) compte.textContent = n ? `— ${n} prise${n > 1 ? 's' : ''} de parole` : '';
+    if ($('#journal-vide')) $('#journal-vide').hidden = n > 0;
+    if ($('#pied-actions')) $('#pied-actions').hidden = n === 0;
+    majProjectionStatut();
   }
 
   function majBoutonsClasser() {
@@ -382,6 +389,13 @@
     $('#apiKey').value = '';
     $('#config').open = false;
     $('#pendant').hidden = false;
+    // « Comment ça marche » : ouvert seulement la toute première fois
+    try {
+      if (!localStorage.getItem('argumentactif.aide-vue')) {
+        $('#comment-ca-marche').open = true;
+        localStorage.setItem('argumentactif.aide-vue', '1');
+      }
+    } catch {}
     $('#mode-actif').textContent = config.mode === 'manuel' ? '' : "Aide de l'IA activée";
     saveState();
     majBoutonTexte();
@@ -541,7 +555,7 @@
   }
   function stopEcoute() {
     ecoute = false;
-    const btn = $('#micro'); if (btn) btn.textContent = '🎤 Dicter';
+    const btn = $('#micro'); if (btn) btn.textContent = '🎤 Dicter à la place de taper';
     if (recognition) { try { recognition.stop(); } catch {} }
   }
 

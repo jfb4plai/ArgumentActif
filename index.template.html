@@ -49,12 +49,17 @@
     .lien-effacer:hover { color:#b3261e; }
     #export-toast { color:var(--teal); font-weight:600; }
     .vue-vide { padding:2rem 1rem; text-align:center; color:var(--text2,#555); }
-    #projection-statut { margin:.3rem 0 .8rem; font-weight:600; }
-    #projection-statut.statut-off { color:var(--orange); }
+    #projection-statut { margin:.3rem 0 .8rem; color:var(--text3,#777); }
+    #projection-statut.statut-off { color:var(--orange); font-weight:600; }
+    #projection-statut.statut-on { color:var(--teal); font-weight:600; }
     kbd { background:#eee; border:1px solid #ccc; border-radius:3px; padding:0 .3em; font-size:.9em; }
-    #ouvrir-projection { min-width:9.5rem; }
-    .plai-nav { flex-wrap:wrap; gap:.4rem; }
+    .plai-nav { flex-wrap:wrap; gap:.4rem; align-items:center; }
     .plai-nav nav { display:flex; flex-wrap:wrap; gap:.4rem; }
+    /* onglet actif = fond plein ; onglets inactifs = contour */
+    .plai-nav nav [data-vue] { background:#fff; color:var(--teal); border:2px solid var(--teal); }
+    .plai-nav nav [data-vue][aria-pressed="true"] { background:var(--teal); color:#fff; font-weight:700; }
+    #ouvrir-projection { min-width:9rem; background:#fff; color:var(--teal); border:2px solid var(--teal); }
+    .saisie-tools .micro-secondaire { background:#fff; color:var(--teal); border:1px solid var(--teal); font-size:.85rem; padding:.3rem .6rem; }
     @media (max-width:640px) {
       .plai-nav { justify-content:center; }
       .plai-nav nav { width:100%; justify-content:center; }
@@ -122,30 +127,30 @@
     </details>
 
     <div id="pendant" hidden>
-      <details id="comment-ca-marche" class="plai-card" open>
-        <summary>Comment ça marche</summary>
+      <details id="comment-ca-marche" class="plai-card">
+        <summary>Comment ça marche (à lire une fois)</summary>
         <ol class="deroule">
           <li>Clique <strong>« Projection ↗ »</strong> (en haut) : une fenêtre s'ouvre. Envoie-la sur le vidéoprojecteur — <em>Windows</em> : touche <kbd>⊞</kbd>+<kbd>P</kbd> puis « Dupliquer » ; <em>Mac</em> : Recopie vidéo. Garde cette fenêtre ouverte pendant tout le débat.</li>
-          <li>Quand un·e élève parle : note son propos ci-dessous, puis <strong>« Classer »</strong>.</li>
+          <li>Quand un·e élève parle : note son propos ci-dessous, puis <strong>« Classer »</strong> (touche Entrée).</li>
           <li>L'étiquette apparaît sur la projection. Recommence à chaque prise de parole.</li>
           <li>Débat terminé → onglet <strong>« Débriefer »</strong> pour l'analyse avec la classe.</li>
         </ol>
       </details>
       <p id="projection-statut" class="aide" hidden></p>
       <div class="plai-card">
-        <div class="saisie-tools">
-          <button id="micro" class="plai-btn" type="button">🎤 Dicter</button>
-          <span id="micro-status" class="aide"></span>
-          <span class="camp-choix">
-            Camp (facultatif) :
-            <label><input type="radio" name="camp" value="pour" /> Pour</label>
-            <label><input type="radio" name="camp" value="contre" /> Contre</label>
-            <label><input type="radio" name="camp" value="" checked /> aucun</label>
-          </span>
-        </div>
-        <label for="propos">Propos entendu (corrige avant de classer)</label>
+        <label for="propos">Propos entendu</label>
         <textarea id="propos" class="plai-input" rows="3"
-                  placeholder="Tape ou dicte ce qui vient d'être dit. Ex. : « De toute façon, si on autorise ça, bientôt tout sera permis. »"></textarea>
+                  placeholder="Note ici ce que l'élève vient de dire, corrige si besoin, puis clique « Classer » (ou appuie sur Entrée)."></textarea>
+        <div class="saisie-tools">
+          <button id="micro" class="micro-secondaire plai-btn" type="button">🎤 Dicter à la place de taper</button>
+          <span id="micro-status" class="aide"></span>
+        </div>
+        <div class="camp-choix">
+          Camp (facultatif) :
+          <label><input type="radio" name="camp" value="pour" /> Pour</label>
+          <label><input type="radio" name="camp" value="contre" /> Contre</label>
+          <label><input type="radio" name="camp" value="" checked /> aucun</label>
+        </div>
         <p class="aide" id="propos-aide">Tu choisis toi-même la catégorie. Rien n'est envoyé nulle part. Le camp est facultatif — c'est la position dans le débat, jamais un jugement sur l'élève.</p>
         <div class="saisie-actions">
           <button id="classer" class="plai-btn">Classer</button>
@@ -160,10 +165,11 @@
       </div>
 
       <h2>Journal de séance <span id="journal-compte" class="aide"></span></h2>
+      <p id="journal-vide" class="aide">Les prises de parole classées apparaîtront ici.</p>
       <ol id="journal" class="journal"></ol>
 
       <p id="rappel-debriefing" class="aide" hidden>Débat terminé ? → onglet <strong>« Débriefer »</strong> pour analyser les étiquettes avec les élèves.</p>
-      <div class="pied-actions">
+      <div class="pied-actions" id="pied-actions" hidden>
         <button id="exporter" class="plai-btn">Enregistrer le compte-rendu (.txt)</button>
         <span id="export-toast" class="aide" hidden>✓ fichier téléchargé</span>
         <span id="mode-actif" class="aide"></span>
