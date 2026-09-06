@@ -121,7 +121,7 @@ function assertCategorie(cat) {
 
 function createUnite({ texteSource, texte, categorie, origine }) {
   assertCategorie(categorie);
-  if (origine !== 'ia' && origine !== 'manuel') throw new Error(`origine invalide : ${origine}`);
+  if (!['ia', 'manuel', 'texte-depart'].includes(origine)) throw new Error(`origine invalide : ${origine}`);
   return {
     id: uid(),
     timestamp: new Date().toISOString(),

@@ -271,3 +271,13 @@ test('clearSeance : texteDepart/sourceIA non-string deviennent vide', () => {
   assert.equal(s.texteDepart, '');
   assert.equal(s.sourceIA, '');
 });
+
+test('createUnite accepte origine "texte-depart"', () => {
+  const u = L.createUnite({ texteSource: 'txt', texte: 'un passage', categorie: 'opinion', origine: 'texte-depart' });
+  assert.equal(u.origine, 'texte-depart');
+  assert.equal(u.camp, null);
+});
+
+test('createUnite refuse toujours une origine inconnue', () => {
+  assert.throws(() => L.createUnite({ texteSource: 'x', texte: 'x', categorie: 'opinion', origine: 'robot' }), /origine/i);
+});
