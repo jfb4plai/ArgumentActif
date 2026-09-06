@@ -108,7 +108,10 @@
   function renderJournal() {
     const el = journalEl();
     el.innerHTML = '';
-    for (const u of state.unites) el.appendChild(renderUnite(u));
+    for (const u of state.unites) {
+      if (u.origine === 'texte-depart') continue;
+      el.appendChild(renderUnite(u));
+    }
   }
 
   function renderUnite(u) {
@@ -197,13 +200,16 @@
 
   function addUnitesFromTexts(items, origine) {
     stopEcoute();
+    if (origine !== 'texte-depart' && state.phase === 'lecture') {
+      state = { ...state, phase: 'debat' };
+    }
     const source = $('#propos').value;
     for (const it of items) {
       let u = L.createUnite({ texteSource: source, texte: it.texte, categorie: it.categorie, origine });
       if (campCourant) u = { ...u, camp: campCourant };
       state = L.addUnite(state, u);
     }
-    saveState(); renderJournal();
+    saveState(); renderJournal(); majBoutonTexte();
   }
 
   async function classer() {
@@ -254,7 +260,9 @@
 
   function demarrer() {
     const sujet = $('#sujet').value.trim();
-    state = { ...state, sujet };
+    const texteDepart = $('#texte-depart').value.trim();
+    const sourceIA = $('#source-ia').value.trim();
+    state = { ...state, sujet, texteDepart, sourceIA, phase: texteDepart ? 'lecture' : 'debat' };
     const modeInput = document.querySelector('input[name="mode"]:checked');
     config.mode = modeInput ? modeInput.value : 'manuel';
     config.proxyUrl = $('#proxyUrl').value.trim();
@@ -266,6 +274,7 @@
     $('#pendant').hidden = false;
     $('#mode-actif').textContent = 'Mode actif : ' + config.mode;
     saveState();
+    majBoutonTexte();
   }
 
   function exporter() {
@@ -355,17 +364,32 @@
     if (recognition) { try { recognition.stop(); } catch {} }
   }
 
+  function majBoutonTexte() {
+    const b = $('#remontrer-texte');
+    if (!b) return;
+    b.hidden = !state.texteDepart;
+    b.textContent = state.phase === 'lecture' ? 'Reprendre le débat' : 'Remontrer le texte de départ';
+  }
+  function basculerPhase() {
+    state = { ...state, phase: state.phase === 'lecture' ? 'debat' : 'lecture' };
+    saveState(); majBoutonTexte();
+  }
+
   function init() {
     buildGrille();
     renderJournal();
     if (state.sujet) $('#sujet').value = state.sujet;
-    if (state.unites.length) {
+    if (state.texteDepart) $('#texte-depart').value = state.texteDepart;
+    if (state.sourceIA) $('#source-ia').value = state.sourceIA;
+    if (state.texteDepart || state.unites.length) {
       $('#config').open = false;
       $('#pendant').hidden = false;
+    }
+    if (state.unites.length) {
       // Le mode d'accès n'est jamais persisté (clé en mémoire de session only).
-      // Après un rechargement, on repart en manuel et on le signale à l'enseignant.
       $('#mode-actif').textContent = 'Séance reprise — mode manuel. Rouvre « Avant le débat » pour re-choisir proxy/clé.';
     }
+    majBoutonTexte();
 
     $('#demarrer').addEventListener('click', demarrer);
     $('#classer').addEventListener('click', classer);
@@ -383,6 +407,7 @@
       campCourant = rd.value || null;
     }));
     $('#ouvrir-projection').addEventListener('click', ouvrirProjection);
+    if ($('#remontrer-texte')) $('#remontrer-texte').addEventListener('click', basculerPhase);
     ['#f-categorie', '#f-camp', '#masquer-etiquettes'].forEach((s) => {
       const el = $(s); if (el) el.addEventListener('change', renderDebriefing);
     });
