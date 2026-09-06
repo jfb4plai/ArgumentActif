@@ -496,7 +496,9 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
   :root{color-scheme:dark}
   body{margin:0;background:#1e293b;color:#f8fafc;font-family:'Inter',system-ui,sans-serif;
        min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:2vh 4vw;box-sizing:border-box}
-  #bandeau{font-size:1.4vw;line-height:1.4;text-align:center;opacity:.85;max-width:70ch;margin-bottom:3vh;border-bottom:1px solid #475569;padding-bottom:1.5vh}
+  #bandeau{font-size:1.4vw;line-height:1.4;text-align:center;opacity:.85;max-width:70ch;padding-bottom:1.2vh}
+  #sujet{font-size:1.7vw;font-weight:600;text-align:center;max-width:70ch;margin-bottom:3vh;padding-bottom:1.5vh;border-bottom:1px solid #475569}
+  #sujet:empty{display:none}
   #courante{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:2vh}
   #courante .pastille{display:inline-flex;align-items:center;gap:1vw;font-size:2.6vw;font-weight:700;padding:.4em .8em;border-radius:.5em;background:#0f172a}
   #courante .dot{width:1.1em;height:1.1em;border-radius:50%}
@@ -510,6 +512,7 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
   #vide{opacity:.5;font-size:1.6vw}
 </style></head><body>
 <div id="bandeau">Cet outil repère un type de mouvement de discours. Il ne juge ni la personne qui parle, ni la vérité de ce qui est dit.</div>
+<div id="sujet"></div>
 <div id="courante"><div id="vide">En attente du premier propos…</div></div>
 <div id="historique"></div>
 <div id="legende"></div>
@@ -519,6 +522,8 @@ if (typeof window !== 'undefined') window.ArgumentActifLogic = api;
   for (const k in TAX){ const s=document.createElement('span'); s.innerHTML='<i style="background:'+TAX[k].couleur+'"></i>'+TAX[k].libelle; leg.appendChild(s); }
   function render(state){
     const c = document.getElementById('courante'); const h = document.getElementById('historique');
+    const sujetEl = document.getElementById('sujet');
+    sujetEl.textContent = (state && state.sujet) ? 'Débat : ' + state.sujet : '';
     const us = (state && state.unites) || [];
     if (!us.length){ c.innerHTML='<div id="vide">En attente du premier propos…</div>'; h.innerHTML=''; return; }
     const last = us[us.length-1];
