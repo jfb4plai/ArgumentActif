@@ -113,3 +113,5 @@ npm test        # tests unitaires de la logique pure (node:test)
 npm run build   # régénère index.html depuis le template + logic.js + app.js
 npx vercel dev  # sert l'app + le proxy /api en local
 ```
+
+<!-- deploy-check: 20260906T124342Z -->
